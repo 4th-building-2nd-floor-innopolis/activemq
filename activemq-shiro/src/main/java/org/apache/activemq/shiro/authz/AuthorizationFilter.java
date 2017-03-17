@@ -191,12 +191,15 @@ public class AuthorizationFilter extends EnvironmentFilter {
 
     @Override
     public Subscription addConsumer(ConnectionContext context, ConsumerInfo info) throws Exception {
-
-        //Unlike when adding a producer, consumers must specify the destination at creation time, so we can rely on
-        //a destination being available to perform the authz check:
-        DestinationAction action = new DestinationAction(context, info.getDestination(), "read");
-        assertAuthorized(action, "read from");
-
+        if (info.isBrowser()) {
+            DestinationAction action = new DestinationAction(context, info.getDestination(), "browse");
+            assertAuthorized(action, "browse from");
+        } else {
+            //Unlike when adding a producer, consumers must specify the destination at creation time, so we can rely on
+            //a destination being available to perform the authz check:
+            DestinationAction action = new DestinationAction(context, info.getDestination(), "read");
+            assertAuthorized(action, "read from");
+        }
         return super.addConsumer(context, info);
     }
 
