@@ -21,20 +21,25 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Enumeration;
+import java.security.Principal;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
+import javax.jms.*;
 import javax.jms.Queue;
-import javax.jms.QueueBrowser;
-import javax.jms.Session;
-import javax.jms.TextMessage;
 
+import org.apache.activemq.broker.Broker;
+import org.apache.activemq.broker.BrokerPlugin;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
+import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.activemq.command.ActiveMQTopic;
+import org.apache.activemq.filter.DestinationMap;
+import org.apache.activemq.jaas.GroupPrincipal;
 import org.apache.activemq.junit.ActiveMQTestRunner;
 import org.apache.activemq.junit.Repeat;
+import org.apache.activemq.security.*;
 import org.apache.qpid.jms.JmsConnectionFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,6 +53,40 @@ import org.slf4j.LoggerFactory;
 public class JMSQueueBrowserTest extends JMSClientTestSupport {
 
     protected static final Logger LOG = LoggerFactory.getLogger(JMSClientTest.class);
+    public static final GroupPrincipal USERS = new GroupPrincipal("users");
+    public static final GroupPrincipal BROWSERS = new GroupPrincipal("browsers");
+
+    public static AuthorizationMap createAuthorizationMap() {
+        DestinationMap readAccess = new DefaultAuthorizationMap();
+        readAccess.put(new ActiveMQQueue(">"), USERS);
+
+        DestinationMap browseAccess = new DefaultAuthorizationMap();
+        browseAccess.put(new ActiveMQQueue(">"), BROWSERS);
+
+        DestinationMap writeAccess = new DefaultAuthorizationMap();
+        writeAccess.put(new ActiveMQQueue(">"), USERS);
+
+        DestinationMap adminAccess = new DefaultAuthorizationMap();
+        adminAccess.put(new ActiveMQQueue(">"), USERS);
+
+        return new SimpleAuthorizationMap(writeAccess, readAccess, adminAccess, browseAccess);
+    }
+
+    @Override
+    protected void addAdditionalPlugins(List<BrokerPlugin> plugins) throws Exception {
+        plugins.add(broker -> {
+            HashMap<String, String> u = new HashMap<>();
+            u.put("user", "password");
+            u.put("browser", "password");
+
+            Map<String, Set<Principal>> groups = new HashMap<>();
+            groups.put("user", Stream.of(USERS).collect(Collectors.toSet()));
+            groups.put("browser", Stream.of(BROWSERS).collect(Collectors.toSet()));
+
+            return new SimpleAuthenticationBroker(broker, u, groups);
+        });
+        plugins.add(new AuthorizationPlugin(createAuthorizationMap()));
+    }
 
     @Test(timeout = 60000)
     @Repeat(repetitions = 5)
@@ -87,7 +126,7 @@ public class JMSQueueBrowserTest extends JMSClientTestSupport {
     public void testCreateQueueBrowser() throws Exception {
         JmsConnectionFactory cf = new JmsConnectionFactory(getAmqpURI());
 
-        connection = cf.createConnection();
+        connection = cf.createConnection("user", "password");
         connection.start();
 
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -95,8 +134,14 @@ public class JMSQueueBrowserTest extends JMSClientTestSupport {
         Queue queue = session.createQueue(getDestinationName());
         session.createConsumer(queue).close();
 
-        QueueBrowser browser = session.createBrowser(queue);
+        Connection browserConnection = cf.createConnection("browser", "password");
+        browserConnection.start();
+        Session browserSession = browserConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        assertNotNull(browserSession);
+        Queue browserQueue = browserSession.createQueue(getDestinationName());
+        QueueBrowser browser = browserSession.createBrowser(browserQueue);
         assertNotNull(browser);
+        assertEquals(0, Collections.list(browser.getEnumeration()).stream().count());
 
         QueueViewMBean proxy = getProxyToQueue(getDestinationName());
         assertEquals(0, proxy.getQueueSize());
