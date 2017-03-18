@@ -16,16 +16,14 @@
  */
 package org.apache.activemq.security;
 
+import org.apache.activemq.command.ActiveMQDestination;
+import org.apache.activemq.filter.DestinationMap;
+import org.apache.activemq.filter.DestinationMapEntry;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.security.Principal;
 import java.util.*;
-
-import org.apache.activemq.command.ActiveMQDestination;
-import org.apache.activemq.filter.DestinationMap;
-import org.apache.activemq.filter.DestinationMapEntry;
-import org.apache.activemq.filter.DestinationMapNode;
-import org.apache.activemq.filter.DestinationNode;
 
 /**
  * Represents a destination based configuration of policies so that individual
@@ -85,6 +83,18 @@ public class DefaultAuthorizationMap extends DestinationMap implements Authoriza
     }
 
     @Override
+    public Set<?> getTempDestinationBrowseACLs() {
+        return Optional.ofNullable(tempDestinationAuthorizationEntry)
+                .map(TempDestinationAuthorizationEntry::getBrowseACLs)
+                .map(acls -> {
+                    Set<Object> answer = new WildcardAwareSet<Object>();
+                    answer.addAll(acls);
+                    return answer;
+                })
+                .orElse(null);
+    }
+
+    @Override
     public Set<Object> getTempDestinationWriteACLs() {
         if (tempDestinationAuthorizationEntry != null) {
             Set<Object> answer = new WildcardAwareSet<Object>();
@@ -131,6 +141,15 @@ public class DefaultAuthorizationMap extends DestinationMap implements Authoriza
             AuthorizationEntry entry = iter.next();
             answer.addAll(entry.getWriteACLs());
         }
+        return answer;
+    }
+
+    @Override
+    public Set<?> getBrowseACLs(ActiveMQDestination destination) {
+        Set<Object> answer = new WildcardAwareSet<>();
+        getAllEntries(destination).stream()
+                .map(AuthorizationEntry::getBrowseACLs)
+                .forEach(answer::addAll);
         return answer;
     }
 

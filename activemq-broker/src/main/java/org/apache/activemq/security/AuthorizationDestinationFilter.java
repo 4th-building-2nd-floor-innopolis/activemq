@@ -46,12 +46,7 @@ public class AuthorizationDestinationFilter extends DestinationFilter {
         // since that could be a wildcard destination
         final ActiveMQDestination destination = next.getActiveMQDestination();
 
-        Set<?> allowedACLs;
-        if (!destination.isTemporary()) {
-            allowedACLs = authorizationMap.getReadACLs(destination);
-        } else {
-            allowedACLs = authorizationMap.getTempDestinationReadACLs();
-        }
+        Set<?> allowedACLs = AuthorizationMapHelper.getACLs(authorizationMap, sub.getConsumerInfo(), destination); //todo: add comments why
 
         if (!securityContext.isBrokerContext() && allowedACLs != null && !securityContext.isInOneOf(allowedACLs) ) {
             throw new SecurityException("User " + securityContext.getUserName() + " is not authorized to read from: " + destination);

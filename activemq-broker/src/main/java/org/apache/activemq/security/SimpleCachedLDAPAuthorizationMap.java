@@ -738,6 +738,11 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
         return transcribeSet(map.getTempDestinationReadACLs());
     }
 
+    @Override
+    public Set<?> getTempDestinationBrowseACLs() {
+        return null;
+    }
+
     /**
      * Provides synchronized and defensive access to the write ACLs for temp destinations as the super implementation
      * returns live copies of the ACLs and {@link AuthorizationEntry} is not setup for concurrent access.
@@ -780,6 +785,11 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
         checkForUpdates();
         DefaultAuthorizationMap map = this.map.get();
         return map.getWriteACLs(destination);
+    }
+
+    @Override
+    public Set<?> getBrowseACLs(ActiveMQDestination destination) {
+        return null;
     }
 
     /**

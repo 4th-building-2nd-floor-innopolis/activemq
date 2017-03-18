@@ -167,6 +167,11 @@ public class LDAPAuthorizationMap implements AuthorizationMap {
         return getACLs(tempSearchBase, constraints, readBase, readAttribute);
     }
 
+    @Override
+    public Set<?> getTempDestinationBrowseACLs() {
+        return null;
+    }
+
     public Set<GroupPrincipal> getTempDestinationWriteACLs() {
         try {
             context = open();
@@ -198,6 +203,11 @@ public class LDAPAuthorizationMap implements AuthorizationMap {
             return getCompositeACLs(destination, writeBase, writeAttribute);
         }
         return getACLs(destination, writeBase, writeAttribute);
+    }
+
+    @Override
+    public Set<?> getBrowseACLs(ActiveMQDestination destination) {
+        return null;
     }
 
     // Properties

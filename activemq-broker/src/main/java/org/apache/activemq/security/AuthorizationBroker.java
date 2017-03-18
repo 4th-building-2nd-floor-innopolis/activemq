@@ -148,12 +148,8 @@ public class AuthorizationBroker extends BrokerFilter implements SecurityAdminMB
     public Subscription addConsumer(ConnectionContext context, ConsumerInfo info) throws Exception {
         final SecurityContext securityContext = checkSecurityContext(context);
 
-        Set<?> allowedACLs = null;
-        if (!info.getDestination().isTemporary()) {
-            allowedACLs = authorizationMap.getReadACLs(info.getDestination());
-        } else {
-            allowedACLs = authorizationMap.getTempDestinationReadACLs();
-        }
+        Set<?> allowedACLs = AuthorizationMapHelper.getACLs(authorizationMap, info);
+
 
         if (!securityContext.isBrokerContext() && allowedACLs != null && !securityContext.isInOneOf(allowedACLs) ) {
             throw new SecurityException("User " + securityContext.getUserName() + " is not authorized to read from: " + info.getDestination());

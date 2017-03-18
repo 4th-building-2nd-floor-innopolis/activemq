@@ -34,6 +34,7 @@ public class SimpleAuthorizationMap implements AuthorizationMap {
     private DestinationMap writeACLs;
     private DestinationMap readACLs;
     private DestinationMap adminACLs;
+    private DestinationMap browseACLs;
 
     private TempDestinationAuthorizationEntry tempDestinationAuthorizationEntry;
 
@@ -44,6 +45,11 @@ public class SimpleAuthorizationMap implements AuthorizationMap {
         this.writeACLs = writeACLs;
         this.readACLs = readACLs;
         this.adminACLs = adminACLs;
+    }
+
+    public SimpleAuthorizationMap(DestinationMap writeACLs, DestinationMap readACLs, DestinationMap adminACLs, DestinationMap browseACLs) {
+        this(writeACLs, readACLs, adminACLs);
+        this.browseACLs = browseACLs;
     }
 
     /*
@@ -87,6 +93,14 @@ public class SimpleAuthorizationMap implements AuthorizationMap {
         }
     }
 
+    public Set<Object> getTempDestinationBrowseACLs() {
+        if (tempDestinationAuthorizationEntry != null) {
+            return tempDestinationAuthorizationEntry.getBrowseACLs();
+        } else {
+            return null;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public Set<Object> getAdminACLs(ActiveMQDestination destination) {
         return adminACLs.get(destination);
@@ -95,6 +109,11 @@ public class SimpleAuthorizationMap implements AuthorizationMap {
     @SuppressWarnings("unchecked")
     public Set<Object> getReadACLs(ActiveMQDestination destination) {
         return readACLs.get(destination);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Set<Object> getBrowseACLs(ActiveMQDestination destination) {
+        return browseACLs.get(destination);
     }
 
     @SuppressWarnings("unchecked")

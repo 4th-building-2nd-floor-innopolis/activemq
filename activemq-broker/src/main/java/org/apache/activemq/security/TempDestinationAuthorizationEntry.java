@@ -38,5 +38,9 @@ public class TempDestinationAuthorizationEntry extends AuthorizationEntry {
         if (readRoles != null) {
             setReadACLs(parseACLs(readRoles));
         }
+
+        if (browseRoles != null) {
+            setBrowseACLs(parseACLs(browseRoles));
+        }
     }
 }

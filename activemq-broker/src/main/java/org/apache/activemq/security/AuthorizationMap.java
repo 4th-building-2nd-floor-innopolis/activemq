@@ -36,6 +36,11 @@ public interface AuthorizationMap {
     Set<?> getTempDestinationReadACLs();
 
     /**
+     * Returns the set of all ACLs capable of browsing from temp destination
+     */
+    Set<?> getTempDestinationBrowseACLs();
+
+    /**
      * Returns the set of all ACLs capable of writing to temp destination
      */
     Set<?> getTempDestinationWriteACLs();
@@ -57,4 +62,9 @@ public interface AuthorizationMap {
      */
     Set<?> getWriteACLs(ActiveMQDestination destination);
 
+    /**
+     * Returns the set of all ACLs capable of browsing (a form of consuming) the
+     * given destination
+     */
+    Set<?> getBrowseACLs(ActiveMQDestination destination);
 }
