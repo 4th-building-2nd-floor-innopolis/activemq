@@ -79,25 +79,25 @@ public class LegacyFrameTranslator implements FrameTranslator {
             String contentType = (String)headers.get(Stomp.Headers.CONTENT_TYPE);
 
             // parse content-type := type "/" subtype *[";" parameter]
-            int tsSepIndex = contentType.indexOf(Stomp.Headers.ContentType.TYPESUBTYPE_SEPARATOR);
-            int spSepIndex = contentType.indexOf(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
+            int slashIndex = contentType.indexOf(Stomp.Headers.ContentType.TYPESUBTYPE_SEPARATOR);
+            int columnIndex = contentType.indexOf(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
 
-            if (tsSepIndex <= 0) {
+            if (slashIndex <= 0) {
                 throw new ProtocolException("Invalid content type format: type not found in + " + contentType);
             }
 
-            if (tsSepIndex + 1 >= contentType.length() || (spSepIndex > 0 && tsSepIndex + 1 >= spSepIndex)) {
+            if (slashIndex + 1 >= contentType.length() || (columnIndex > 0 && slashIndex + 1 >= columnIndex)) {
                 throw new ProtocolException("Invalid content type format: subtype not found in + " + contentType);
             }
 
             // parse type/subtype
-            String type = contentType.substring(0, tsSepIndex).trim();
+            String type = contentType.substring(0, slashIndex).trim();
 
             // parse parameters
             HashMap<String, String> parameters = null;
-            if (spSepIndex > 0) {
+            if (columnIndex > 0) {
                 parameters = new HashMap<>();
-                String parameterString = contentType.substring(spSepIndex + 1, contentType.length());
+                String parameterString = contentType.substring(columnIndex + 1, contentType.length());
                 String[] keyValueStrings =  parameterString.split(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
 
                 for (String keyValueString : keyValueStrings) {
