@@ -977,6 +977,99 @@ public class StompTest extends StompTestSupport {
     }
 
     @Test(timeout = 60000)
+    public void testContentTypeTextWithoutCharset() throws Exception {
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        String frame = "CONNECT\n" + "login:system\n" + "passcode:manager\n\n" + Stomp.NULL;
+        stompConnection.sendFrame(frame);
+
+        frame = stompConnection.receiveFrame();
+        assertTrue(frame.startsWith("CONNECTED"));
+
+        frame = "SEND\n" + "content-type:text/plain\n" + "destination:/queue/" + getQueueName() + "\n\n" + "Hello World" + Stomp.NULL;
+
+        stompConnection.sendFrame(frame);
+
+        TextMessage message = (TextMessage)consumer.receive(2500);
+        assertNotNull(message);
+        assertEquals("Hello World", message.getText());
+    }
+
+    @Test(timeout = 60000)
+    public void testContentTypeTextWithUTF8() throws Exception {
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        String frame = "CONNECT\n" + "login:system\n" + "passcode:manager\n\n" + Stomp.NULL;
+        stompConnection.sendFrame(frame);
+
+        frame = stompConnection.receiveFrame();
+        assertTrue(frame.startsWith("CONNECTED"));
+
+        frame = "SEND\n" + "content-type:text/plain;charset=utf-8\n" + "destination:/queue/" + getQueueName() + "\n\n" + "Hello World" + Stomp.NULL;
+
+        stompConnection.sendFrame(frame);
+
+        TextMessage message = (TextMessage)consumer.receive(2500);
+        assertNotNull(message);
+        assertEquals("Hello World", message.getText());
+    }
+
+    @Test(timeout = 60000)
+    public void testContentTypeWithContentLength() throws Exception {
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        String frame = "CONNECT\n" + "login:system\n" + "passcode:manager\n\n" + Stomp.NULL;
+        stompConnection.sendFrame(frame);
+
+        frame = stompConnection.receiveFrame();
+        assertTrue(frame.startsWith("CONNECTED"));
+
+        frame = "SEND\n" + "content-type:text/plain\n" + "content-length:11\n" + "destination:/queue/" + getQueueName() + "\n\n" + "Hello World" + Stomp.NULL;
+
+        stompConnection.sendFrame(frame);
+
+        TextMessage message = (TextMessage)consumer.receive(2500);
+        assertNotNull(message);
+        assertEquals("Hello World", message.getText());
+    }
+
+    @Test(timeout = 60000)
+    public void testContentTypeUnknownCharset() throws Exception {
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        String frame = "CONNECT\n" + "login:system\n" + "passcode:manager\n\n" + Stomp.NULL;
+        stompConnection.sendFrame(frame);
+
+        frame = stompConnection.receiveFrame();
+        assertTrue(frame.startsWith("CONNECTED"));
+
+        frame = "SEND\n" + "content-type:text/plain;charset=utf-20\n" + "destination:/queue/" + getQueueName() + "\n\n" + "Hello World" + Stomp.NULL;
+
+        stompConnection.sendFrame(frame);
+
+        BytesMessage message = (BytesMessage) consumer.receive(2500);
+        assertNotNull(message);
+    }
+
+    @Test(timeout = 60000)
+    public void testContentTypeJson() throws Exception {
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        String frame = "CONNECT\n" + "login:system\n" + "passcode:manager\n\n" + Stomp.NULL;
+        stompConnection.sendFrame(frame);
+
+        frame = stompConnection.receiveFrame();
+        assertTrue(frame.startsWith("CONNECTED"));
+
+        frame = "SEND\n" + "content-type:application/json;charset=utf-8\n" + "destination:/queue/" + getQueueName() + "\n\n" + jsonObject + Stomp.NULL;
+
+        stompConnection.sendFrame(frame);
+
+        BytesMessage message = (BytesMessage) consumer.receive(2500);
+        assertNotNull(message);
+    }
+
+    @Test(timeout = 60000)
     public void testTransformationUnknownTranslator() throws Exception {
         MessageConsumer consumer = session.createConsumer(queue);
 

@@ -18,6 +18,10 @@ package org.apache.activemq.transport.stomp;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +34,7 @@ import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.activemq.util.ByteArrayOutputStream;
 import org.apache.activemq.util.ByteSequence;
+import org.apache.activemq.util.StringArrayConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +75,70 @@ public class LegacyFrameTranslator implements FrameTranslator {
             } else {
                 throw new ProtocolException("Unsupported message type '"+intendedType+"'",false);
             }
+        }else if(headers.containsKey(Stomp.Headers.CONTENT_TYPE)) {
+            String contentType = (String)headers.get(Stomp.Headers.CONTENT_TYPE);
+
+            // parse content-type := type "/" subtype *[";" parameter]
+            int tsSepIndex = contentType.indexOf(Stomp.Headers.ContentType.TYPESUBTYPE_SEPARATOR);
+            int spSepIndex = contentType.indexOf(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
+
+            if (tsSepIndex <= 0) {
+                throw new ProtocolException("Invalid content type format: type not found in + " + contentType);
+            }
+
+            if (tsSepIndex + 1 >= contentType.length() || (spSepIndex > 0 && tsSepIndex + 1 >= spSepIndex)) {
+                throw new ProtocolException("Invalid content type format: subtype not found in + " + contentType);
+            }
+
+            // parse type/subtype
+            String type = contentType.substring(0, tsSepIndex).trim();
+
+            // parse parameters
+            HashMap<String, String> parameters = null;
+            if (spSepIndex > 0) {
+                parameters = new HashMap<>();
+                String parameterString = contentType.substring(spSepIndex + 1, contentType.length());
+                String[] keyValueStrings =  parameterString.split(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
+
+                for (String keyValueString : keyValueStrings) {
+                    String[] keyValue = keyValueString.split(Stomp.Headers.ContentType.KEYVALUE_SEPARATOR);
+
+                    if (keyValue.length != 2 || keyValue[0].length() == 0 || keyValue[1].length() == 0) {
+                        throw new ProtocolException("Invalid parameter format: " + keyValueString);
+                    }
+
+                    parameters.put(keyValue[0], keyValue[1]);
+                }
+
+            }
+
+            // try to convert bytes to encoded text
+            String text = null;
+            if (type.equals(Stomp.Headers.ContentType.TYPE_TEXT)) {
+                String charset = null;
+                if (parameters != null && parameters.containsKey(Stomp.Headers.ContentType.PARAMETER_CHARSET)) {
+                    charset = parameters.get(Stomp.Headers.ContentType.PARAMETER_CHARSET);
+                }else {
+                    charset = Stomp.Headers.ContentType.PARAMETER_DEFAULT_CHARSET;
+                }
+
+                try {
+                    text = new String(command.getContent(), charset.toUpperCase());
+                } catch (UnsupportedEncodingException e) {
+                    // encoding is not supported, so continue with bytes
+                }
+            }
+
+            if (text != null) {
+                ActiveMQTextMessage tm = new ActiveMQTextMessage();
+                tm.setText(text);
+                msg = tm;
+            }else {
+                ActiveMQBytesMessage bm = new ActiveMQBytesMessage();
+                bm.writeBytes(command.getContent());
+                msg = bm;
+            }
+
         }else if (headers.containsKey(Stomp.Headers.CONTENT_LENGTH)) {
             headers.remove(Stomp.Headers.CONTENT_LENGTH);
             ActiveMQBytesMessage bm = new ActiveMQBytesMessage();

@@ -85,6 +85,26 @@ public interface Stomp {
          */
         String AMQ_MESSAGE_TYPE = "amq-msg-type";
 
+        public interface ContentType {
+            String TYPE_TEXT = "text";
+            String TYPE_APPLICATION = "application";
+            String TYPE_MULTIPART = "multipart";
+            String TYPE_MESSAGE = "message";
+            String TYPE_IMAGE = "image";
+            String TYPE_AUDIO = "audio";
+            String TYPE_VIDEO = "video";
+
+            String SUBTYPE_XML = "xml";
+            String SUBTYPE_JSON = "json";
+
+            String PARAMETER_CHARSET = "charset";
+            String PARAMETER_DEFAULT_CHARSET = "us-ascii";
+
+            String TYPESUBTYPE_SEPARATOR = "/";
+            String PARAMETER_SEPARATOR = ";";
+            String KEYVALUE_SEPARATOR = "=";
+        }
+
         public interface Response {
             String RECEIPT_ID = "receipt-id";
         }
