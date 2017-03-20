@@ -1035,23 +1035,6 @@ public class StompTest extends StompTestSupport {
     }
 
     @Test(timeout = 60000)
-    public void testContentTypeUnknownCharset() throws Exception {
-        MessageConsumer consumer = session.createConsumer(queue);
-
-        String frame = "CONNECT\n" + "login:system\n" + "passcode:manager\n\n" + Stomp.NULL;
-        stompConnection.sendFrame(frame);
-
-        frame = stompConnection.receiveFrame();
-        assertTrue(frame.startsWith("CONNECTED"));
-
-        frame = "SEND\n" + "content-type:text/plain;charset=utf-20\n" + "destination:/queue/" + getQueueName() + "\n\n" + "Hello World" + Stomp.NULL;
-
-        stompConnection.sendFrame(frame);
-        BytesMessage message = (BytesMessage) consumer.receive(2500);
-        assertNull(message);
-    }
-
-    @Test(timeout = 60000)
     public void testContentTypeJson() throws Exception {
         MessageConsumer consumer = session.createConsumer(queue);
 

@@ -32,6 +32,7 @@ import org.apache.activemq.command.ActiveMQBytesMessage;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.activemq.command.ActiveMQTextMessage;
+import org.apache.activemq.transport.stomp.legacy.frame.translator.handlers.*;
 import org.apache.activemq.util.ByteArrayOutputStream;
 import org.apache.activemq.util.ByteSequence;
 import org.apache.activemq.util.StringArrayConverter;
@@ -45,123 +46,19 @@ public class LegacyFrameTranslator implements FrameTranslator {
 
     private static final Logger LOG = LoggerFactory.getLogger(LegacyFrameTranslator.class);
 
+    private AbstractFrameHandler frameHandler;
+
+    public LegacyFrameTranslator () {
+        frameHandler = new AMQTypeBasedFrameHandler();
+        AbstractFrameHandler nextHandler = frameHandler;
+        nextHandler = nextHandler.setNext(new ContentTypeBasedFrameHandler());
+        nextHandler = nextHandler.setNext(new ContentLengthBasedFrameHandler());
+        nextHandler = nextHandler.setNext(new DefaultFrameHandler());
+    }
+
     @Override
     public ActiveMQMessage convertFrame(ProtocolConverter converter, StompFrame command) throws JMSException, ProtocolException {
-        final Map<?, ?> headers = command.getHeaders();
-        final ActiveMQMessage msg;
-        /*
-         * To reduce the complexity of this method perhaps a Chain of Responsibility
-         * would be a better implementation
-         */
-        if (headers.containsKey(Stomp.Headers.AMQ_MESSAGE_TYPE)) {
-            String intendedType = (String) headers.get(Stomp.Headers.AMQ_MESSAGE_TYPE);
-            if (intendedType.equalsIgnoreCase("text")) {
-                ActiveMQTextMessage text = new ActiveMQTextMessage();
-                try {
-                    ByteArrayOutputStream bytes = new ByteArrayOutputStream(command.getContent().length + 4);
-                    DataOutputStream data = new DataOutputStream(bytes);
-                    data.writeInt(command.getContent().length);
-                    data.write(command.getContent());
-                    text.setContent(bytes.toByteSequence());
-                    data.close();
-                } catch (Throwable e) {
-                    throw new ProtocolException("Text could not bet set: " + e, false, e);
-                }
-                msg = text;
-            } else if (intendedType.equalsIgnoreCase("bytes")) {
-                ActiveMQBytesMessage byteMessage = new ActiveMQBytesMessage();
-                byteMessage.writeBytes(command.getContent());
-                msg = byteMessage;
-            } else {
-                throw new ProtocolException("Unsupported message type '" + intendedType + "'", false);
-            }
-        } else if (headers.containsKey(Stomp.Headers.CONTENT_TYPE)) {
-            String contentType = (String) headers.get(Stomp.Headers.CONTENT_TYPE);
-
-            // parse content-type := type "/" subtype *[";" parameter]
-            int slashIndex = contentType.indexOf(Stomp.Headers.ContentType.TYPESUBTYPE_SEPARATOR);
-            int columnIndex = contentType.indexOf(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
-
-            if (slashIndex <= 0) {
-                throw new ProtocolException("Invalid content type format: type not found in + " + contentType);
-            }
-
-            if (slashIndex == contentType.length() - 1) {
-                throw new ProtocolException("Invalid content type format: subtype not found in + " + contentType);
-            }
-
-            if (columnIndex >= 0 && slashIndex + 1 >= columnIndex) {
-                throw new ProtocolException("Invalid content type format: unexpected " + Stomp.Headers.ContentType.PARAMETER_SEPARATOR + " in " + contentType);
-            }
-
-            // parse type/subtype
-            String type = contentType.substring(0, slashIndex).trim();
-
-            // parse parameters
-            HashMap<String, String> parameters = null;
-            if (columnIndex > 0) {
-                parameters = new HashMap<>();
-                String parameterString = contentType.substring(columnIndex + 1, contentType.length());
-                String[] keyValueStrings = parameterString.split(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
-
-                for (String keyValueString : keyValueStrings) {
-                    String[] keyValue = keyValueString.split(Stomp.Headers.ContentType.KEYVALUE_SEPARATOR);
-
-                    if (keyValue.length != 2 || keyValue[0].length() == 0 || keyValue[1].length() == 0) {
-                        throw new ProtocolException("Invalid content type format: bad parameter " + keyValueString);
-                    }
-
-                    parameters.put(keyValue[0], keyValue[1]);
-                }
-
-            }
-
-            // try to convert bytes to encoded text
-            String text = null;
-            if (type.equals(Stomp.Headers.ContentType.TYPE_TEXT)) {
-                String charset = null;
-                if (parameters != null && parameters.containsKey(Stomp.Headers.ContentType.PARAMETER_CHARSET)) {
-                    charset = parameters.get(Stomp.Headers.ContentType.PARAMETER_CHARSET);
-                } else {
-                    charset = Stomp.Headers.ContentType.PARAMETER_DEFAULT_CHARSET;
-                }
-
-                try {
-                    text = new String(command.getContent(), charset.toUpperCase());
-                } catch (UnsupportedEncodingException e) {
-                    throw new ProtocolException("Invalid content type format: unsupported charset " + charset);
-                }
-            }
-
-            if (text != null) {
-                ActiveMQTextMessage tm = new ActiveMQTextMessage();
-                tm.setText(text);
-                msg = tm;
-            } else {
-                ActiveMQBytesMessage bm = new ActiveMQBytesMessage();
-                bm.writeBytes(command.getContent());
-                msg = bm;
-            }
-
-        } else if (headers.containsKey(Stomp.Headers.CONTENT_LENGTH)) {
-            headers.remove(Stomp.Headers.CONTENT_LENGTH);
-            ActiveMQBytesMessage bm = new ActiveMQBytesMessage();
-            bm.writeBytes(command.getContent());
-            msg = bm;
-        } else {
-            ActiveMQTextMessage text = new ActiveMQTextMessage();
-            try {
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream(command.getContent().length + 4);
-                DataOutputStream data = new DataOutputStream(bytes);
-                data.writeInt(command.getContent().length);
-                data.write(command.getContent());
-                text.setContent(bytes.toByteSequence());
-                data.close();
-            } catch (Throwable e) {
-                throw new ProtocolException("Text could not bet set: " + e, false, e);
-            }
-            msg = text;
-        }
+        ActiveMQMessage msg = frameHandler.handle(command);
         FrameTranslator.Helper.copyStandardHeadersFromFrameToMessage(converter, command, msg, this);
         return msg;
     }
