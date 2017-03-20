@@ -103,75 +103,79 @@ public abstract class AbstractRegion implements Region {
             context.setSecurityContext(SecurityContext.BROKER_SECURITY_CONTEXT);
             context.getBroker().addDestination(context, dest, false);
         }
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try{
             for (Iterator<Destination> i = destinations.values().iterator(); i.hasNext();) {
                 Destination dest = i.next();
                 dest.start();
             }
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
     }
 
     @Override
     public void stop() throws Exception {
         started = false;
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try{
             for (Iterator<Destination> i = destinations.values().iterator(); i.hasNext();) {
                 Destination dest = i.next();
                 dest.stop();
             }
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
 
-        destinationsLock.writeLock().lock();
+        //destinationsLock.writeLock().lock();
         try {
             destinations.clear();
             regionStatistics.getAdvisoryDestinations().reset();
             regionStatistics.getDestinations().reset();
             regionStatistics.getAllDestinations().reset();
         } finally {
-            destinationsLock.writeLock().unlock();
+           // destinationsLock.writeLock().unlock();
         }
     }
 
     @Override
     public Destination addDestination(ConnectionContext context, ActiveMQDestination destination,
-            boolean createIfTemporary) throws Exception {
+                                      boolean createIfTemporary) throws Exception {
 
-        destinationsLock.writeLock().lock();
-        try {
-            Destination dest = destinations.get(destination);
-            if (dest == null) {
-                if (destination.isTemporary() == false || createIfTemporary) {
-                    // Limit the number of destinations that can be created if
-                    // maxDestinations has been set on a policy
-                    validateMaxDestinations(destination);
-
-                    LOG.debug("{} adding destination: {}", broker.getBrokerName(), destination);
-                    dest = createDestination(context, destination);
-                    // intercept if there is a valid interceptor defined
-                    DestinationInterceptor destinationInterceptor = broker.getDestinationInterceptor();
-                    if (destinationInterceptor != null) {
-                        dest = destinationInterceptor.intercept(dest);
-                    }
-                    dest.start();
-                    addSubscriptionsForDestination(context, dest);
-                    destinations.put(destination, dest);
-                    updateRegionDestCounts(destination, 1);
-                    destinationMap.put(destination, dest);
-                }
+        Destination dest = destinations.get(destination);
+        if (dest == null) {
+            //destinationsLock.writeLock().lock();
+            try {
+                dest = destinations.get(destination);
                 if (dest == null) {
-                    throw new DestinationDoesNotExistException(destination.getQualifiedName());
+                    if (destination.isTemporary() == false || createIfTemporary) {
+                        // Limit the number of destinations that can be created if
+                        // maxDestinations has been set on a policy
+                        validateMaxDestinations(destination);
+
+                        LOG.debug("{} adding destination: {}", broker.getBrokerName(), destination);
+                        dest = createDestination(context, destination);
+                        // intercept if there is a valid interceptor defined
+                        DestinationInterceptor destinationInterceptor = broker.getDestinationInterceptor();
+                        if (destinationInterceptor != null) {
+                            dest = destinationInterceptor.intercept(dest);
+                        }
+                        dest.start();
+                        addSubscriptionsForDestination(context, dest);
+                        updateRegionDestCounts(destination, 1);
+                        destinations.put(destination, dest);
+                        destinationMap.put(destination, dest);
+                    }
+                    if (dest == null) {
+                        throw new DestinationDoesNotExistException(destination.getQualifiedName());
+                    }
                 }
+            } finally{
+                //destinationsLock.writeLock().unlock();
             }
-            return dest;
-        } finally {
-            destinationsLock.writeLock().unlock();
+
         }
+        return dest;
     }
 
     public Map<ConsumerId, Subscription> getSubscriptions() {
@@ -282,7 +286,7 @@ public abstract class AbstractRegion implements Region {
 
         LOG.debug("{} removing destination: {}", broker.getBrokerName(), destination);
 
-        destinationsLock.writeLock().lock();
+        //destinationsLock.writeLock().lock();
         try {
             Destination dest = destinations.remove(destination);
             if (dest != null) {
@@ -307,7 +311,7 @@ public abstract class AbstractRegion implements Region {
                 LOG.debug("Cannot remove a destination that doesn't exist: {}", destination);
             }
         } finally {
-            destinationsLock.writeLock().unlock();
+            //destinationsLock.writeLock().unlock();
         }
     }
 
@@ -319,11 +323,11 @@ public abstract class AbstractRegion implements Region {
     @Override
     @SuppressWarnings("unchecked")
     public Set<Destination> getDestinations(ActiveMQDestination destination) {
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try{
             return destinationMap.get(destination);
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
     }
 
@@ -385,13 +389,13 @@ public abstract class AbstractRegion implements Region {
             // Add the subscription to all the matching queues.
             // But copy the matches first - to prevent deadlocks
             List<Destination> addList = new ArrayList<Destination>();
-            destinationsLock.readLock().lock();
+            //destinationsLock.readLock().lock();
             try {
                 for (Destination dest : (Set<Destination>) destinationMap.get(info.getDestination())) {
                     addList.add(dest);
                 }
             } finally {
-                destinationsLock.readLock().unlock();
+                //destinationsLock.readLock().unlock();
             }
 
             List<Destination> removeList = new ArrayList<Destination>();
@@ -443,11 +447,11 @@ public abstract class AbstractRegion implements Region {
      */
     protected Set<ActiveMQDestination> getInactiveDestinations() {
         Set<ActiveMQDestination> inactiveDests = destinationFactory.getDestinations();
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try {
             inactiveDests.removeAll(destinations.keySet());
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
         return inactiveDests;
     }
@@ -463,13 +467,13 @@ public abstract class AbstractRegion implements Region {
 
             // remove the subscription from all the matching queues.
             List<Destination> removeList = new ArrayList<Destination>();
-            destinationsLock.readLock().lock();
+            //destinationsLock.readLock().lock();
             try {
                 for (Destination dest : (Set<Destination>) destinationMap.get(info.getDestination())) {
                     removeList.add(dest);
                 }
             } finally {
-                destinationsLock.readLock().unlock();
+                //destinationsLock.readLock().unlock();
             }
             for (Destination dest : removeList) {
                 dest.removeSubscription(context, sub, info.getLastDeliveredSequenceId());
@@ -538,11 +542,11 @@ public abstract class AbstractRegion implements Region {
     protected Destination lookup(ConnectionContext context, ActiveMQDestination destination,boolean createTemporary) throws Exception {
         Destination dest = null;
 
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try {
             dest = destinations.get(destination);
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
 
         if (dest == null) {
@@ -553,11 +557,11 @@ public abstract class AbstractRegion implements Region {
                 context.getBroker().addDestination(context, destination, createTemporary);
                 dest = addDestination(context, destination, false);
                 // We should now have the dest created.
-                destinationsLock.readLock().lock();
+                //destinationsLock.readLock().lock();
                 try {
                     dest = destinations.get(destination);
                 } finally {
-                    destinationsLock.readLock().unlock();
+                    //destinationsLock.readLock().unlock();
                 }
             }
 
@@ -589,11 +593,11 @@ public abstract class AbstractRegion implements Region {
     protected void processDispatchNotificationViaDestination(MessageDispatchNotification messageDispatchNotification)
             throws Exception {
         Destination dest = null;
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try {
             dest = destinations.get(messageDispatchNotification.getDestination());
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
 
         if (dest != null) {
@@ -612,13 +616,13 @@ public abstract class AbstractRegion implements Region {
             sub.gc();
         }
 
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try {
             for (Destination dest : destinations.values()) {
                 dest.gc();
             }
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
     }
 
@@ -640,13 +644,13 @@ public abstract class AbstractRegion implements Region {
     @Override
     @SuppressWarnings("unchecked")
     public void addProducer(ConnectionContext context, ProducerInfo info) throws Exception {
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try {
             for (Destination dest : (Set<Destination>) destinationMap.get(info.getDestination())) {
                 dest.addProducer(context, info);
             }
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
     }
 
@@ -661,13 +665,13 @@ public abstract class AbstractRegion implements Region {
     @Override
     @SuppressWarnings("unchecked")
     public void removeProducer(ConnectionContext context, ProducerInfo info) throws Exception {
-        destinationsLock.readLock().lock();
+        //destinationsLock.readLock().lock();
         try {
             for (Destination dest : (Set<Destination>) destinationMap.get(info.getDestination())) {
                 dest.removeProducer(context, info);
             }
         } finally {
-            destinationsLock.readLock().unlock();
+            //destinationsLock.readLock().unlock();
         }
     }
 
@@ -699,7 +703,7 @@ public abstract class AbstractRegion implements Region {
 
     @Override
     public void reapplyInterceptor() {
-        destinationsLock.writeLock().lock();
+        //destinationsLock.writeLock().lock();
         try {
             DestinationInterceptor destinationInterceptor = broker.getDestinationInterceptor();
             Map<ActiveMQDestination, Destination> map = getDestinationMap();
@@ -718,7 +722,7 @@ public abstract class AbstractRegion implements Region {
                 }
             }
         } finally {
-            destinationsLock.writeLock().unlock();
+            //destinationsLock.writeLock().unlock();
         }
     }
 }
