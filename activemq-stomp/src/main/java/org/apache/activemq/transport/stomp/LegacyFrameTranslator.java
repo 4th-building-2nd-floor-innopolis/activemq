@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,8 +54,8 @@ public class LegacyFrameTranslator implements FrameTranslator {
          * would be a better implementation
          */
         if (headers.containsKey(Stomp.Headers.AMQ_MESSAGE_TYPE)) {
-            String intendedType = (String)headers.get(Stomp.Headers.AMQ_MESSAGE_TYPE);
-            if(intendedType.equalsIgnoreCase("text")){
+            String intendedType = (String) headers.get(Stomp.Headers.AMQ_MESSAGE_TYPE);
+            if (intendedType.equalsIgnoreCase("text")) {
                 ActiveMQTextMessage text = new ActiveMQTextMessage();
                 try {
                     ByteArrayOutputStream bytes = new ByteArrayOutputStream(command.getContent().length + 4);
@@ -68,15 +68,15 @@ public class LegacyFrameTranslator implements FrameTranslator {
                     throw new ProtocolException("Text could not bet set: " + e, false, e);
                 }
                 msg = text;
-            } else if(intendedType.equalsIgnoreCase("bytes")) {
+            } else if (intendedType.equalsIgnoreCase("bytes")) {
                 ActiveMQBytesMessage byteMessage = new ActiveMQBytesMessage();
                 byteMessage.writeBytes(command.getContent());
                 msg = byteMessage;
             } else {
-                throw new ProtocolException("Unsupported message type '"+intendedType+"'",false);
+                throw new ProtocolException("Unsupported message type '" + intendedType + "'", false);
             }
-        }else if(headers.containsKey(Stomp.Headers.CONTENT_TYPE)) {
-            String contentType = (String)headers.get(Stomp.Headers.CONTENT_TYPE);
+        } else if (headers.containsKey(Stomp.Headers.CONTENT_TYPE)) {
+            String contentType = (String) headers.get(Stomp.Headers.CONTENT_TYPE);
 
             // parse content-type := type "/" subtype *[";" parameter]
             int slashIndex = contentType.indexOf(Stomp.Headers.ContentType.TYPESUBTYPE_SEPARATOR);
@@ -86,8 +86,12 @@ public class LegacyFrameTranslator implements FrameTranslator {
                 throw new ProtocolException("Invalid content type format: type not found in + " + contentType);
             }
 
-            if (slashIndex + 1 >= contentType.length() || (columnIndex > 0 && slashIndex + 1 >= columnIndex)) {
+            if (slashIndex == contentType.length() - 1) {
                 throw new ProtocolException("Invalid content type format: subtype not found in + " + contentType);
+            }
+
+            if (columnIndex >= 0 && slashIndex + 1 >= columnIndex) {
+                throw new ProtocolException("Invalid content type format: unexpected " + Stomp.Headers.ContentType.PARAMETER_SEPARATOR + " in " + contentType);
             }
 
             // parse type/subtype
@@ -98,13 +102,13 @@ public class LegacyFrameTranslator implements FrameTranslator {
             if (columnIndex > 0) {
                 parameters = new HashMap<>();
                 String parameterString = contentType.substring(columnIndex + 1, contentType.length());
-                String[] keyValueStrings =  parameterString.split(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
+                String[] keyValueStrings = parameterString.split(Stomp.Headers.ContentType.PARAMETER_SEPARATOR);
 
                 for (String keyValueString : keyValueStrings) {
                     String[] keyValue = keyValueString.split(Stomp.Headers.ContentType.KEYVALUE_SEPARATOR);
 
                     if (keyValue.length != 2 || keyValue[0].length() == 0 || keyValue[1].length() == 0) {
-                        throw new ProtocolException("Invalid parameter format: " + keyValueString);
+                        throw new ProtocolException("Invalid content type format: bad parameter " + keyValueString);
                     }
 
                     parameters.put(keyValue[0], keyValue[1]);
@@ -118,14 +122,14 @@ public class LegacyFrameTranslator implements FrameTranslator {
                 String charset = null;
                 if (parameters != null && parameters.containsKey(Stomp.Headers.ContentType.PARAMETER_CHARSET)) {
                     charset = parameters.get(Stomp.Headers.ContentType.PARAMETER_CHARSET);
-                }else {
+                } else {
                     charset = Stomp.Headers.ContentType.PARAMETER_DEFAULT_CHARSET;
                 }
 
                 try {
                     text = new String(command.getContent(), charset.toUpperCase());
                 } catch (UnsupportedEncodingException e) {
-                    // encoding is not supported, so continue with bytes
+                    throw new ProtocolException("Invalid content type format: unsupported charset " + charset);
                 }
             }
 
@@ -133,13 +137,13 @@ public class LegacyFrameTranslator implements FrameTranslator {
                 ActiveMQTextMessage tm = new ActiveMQTextMessage();
                 tm.setText(text);
                 msg = tm;
-            }else {
+            } else {
                 ActiveMQBytesMessage bm = new ActiveMQBytesMessage();
                 bm.writeBytes(command.getContent());
                 msg = bm;
             }
 
-        }else if (headers.containsKey(Stomp.Headers.CONTENT_LENGTH)) {
+        } else if (headers.containsKey(Stomp.Headers.CONTENT_LENGTH)) {
             headers.remove(Stomp.Headers.CONTENT_LENGTH);
             ActiveMQBytesMessage bm = new ActiveMQBytesMessage();
             bm.writeBytes(command.getContent());
@@ -181,7 +185,7 @@ public class LegacyFrameTranslator implements FrameTranslator {
                     command.setContent(content);
                 }
             } else {
-                ActiveMQTextMessage msg = (ActiveMQTextMessage)message.copy();
+                ActiveMQTextMessage msg = (ActiveMQTextMessage) message.copy();
                 String messageText = msg.getText();
                 if (messageText != null) {
                     command.setContent(msg.getText().getBytes("UTF-8"));
@@ -190,9 +194,9 @@ public class LegacyFrameTranslator implements FrameTranslator {
 
         } else if (message.getDataStructureType() == ActiveMQBytesMessage.DATA_STRUCTURE_TYPE) {
 
-            ActiveMQBytesMessage msg = (ActiveMQBytesMessage)message.copy();
+            ActiveMQBytesMessage msg = (ActiveMQBytesMessage) message.copy();
             msg.setReadOnlyBody(true);
-            byte[] data = new byte[(int)msg.getBodyLength()];
+            byte[] data = new byte[(int) msg.getBodyLength()];
             msg.readBytes(data);
 
             headers.put(Stomp.Headers.CONTENT_LENGTH, Integer.toString(data.length));
@@ -207,11 +211,11 @@ public class LegacyFrameTranslator implements FrameTranslator {
         if (d == null) {
             return null;
         }
-        ActiveMQDestination activeMQDestination = (ActiveMQDestination)d;
+        ActiveMQDestination activeMQDestination = (ActiveMQDestination) d;
         String physicalName = activeMQDestination.getPhysicalName();
 
         String rc = converter.getCreatedTempDestinationName(activeMQDestination);
-        if( rc!=null ) {
+        if (rc != null) {
             return rc;
         }
 
@@ -246,7 +250,7 @@ public class LegacyFrameTranslator implements FrameTranslator {
 
         String[] destinations = name.split(",");
         if (destinations == null || destinations.length == 0) {
-            destinations = new String[] { name };
+            destinations = new String[]{name};
         }
 
         StringBuilder destinationBuilder = new StringBuilder();
@@ -290,7 +294,7 @@ public class LegacyFrameTranslator implements FrameTranslator {
                     }
                 } else {
                     throw new ProtocolException("Illegal destination name: [" + originalName + "] -- ActiveMQ STOMP destinations "
-                                                + "must begin with one of: /queue/ /topic/ /temp-queue/ /temp-topic/");
+                            + "must begin with one of: /queue/ /topic/ /temp-queue/ /temp-topic/");
                 }
             }
 

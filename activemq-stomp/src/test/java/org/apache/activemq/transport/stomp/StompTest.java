@@ -50,6 +50,7 @@ import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.apache.activemq.broker.region.policy.PolicyEntry;
 import org.apache.activemq.broker.region.policy.PolicyMap;
+import org.apache.activemq.command.ActiveMQBytesMessage;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.activemq.util.Wait;
@@ -1046,9 +1047,8 @@ public class StompTest extends StompTestSupport {
         frame = "SEND\n" + "content-type:text/plain;charset=utf-20\n" + "destination:/queue/" + getQueueName() + "\n\n" + "Hello World" + Stomp.NULL;
 
         stompConnection.sendFrame(frame);
-
         BytesMessage message = (BytesMessage) consumer.receive(2500);
-        assertNotNull(message);
+        assertNull(message);
     }
 
     @Test(timeout = 60000)
@@ -1065,8 +1065,13 @@ public class StompTest extends StompTestSupport {
 
         stompConnection.sendFrame(frame);
 
-        BytesMessage message = (BytesMessage) consumer.receive(2500);
+        ActiveMQBytesMessage message = (ActiveMQBytesMessage) consumer.receive(2500);
         assertNotNull(message);
+
+        byte[] jsonData = new byte[(int)message.getBodyLength()];
+        message.readBytes(jsonData);
+        String jsonString = new String(jsonData);
+        assertEquals(jsonObject, jsonString);
     }
 
     @Test(timeout = 60000)
