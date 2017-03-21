@@ -251,6 +251,28 @@ public class AuthorizationFilterTest {
         filter.addConsumer(context, info);
     }
 
+    @Test(expected=UnauthorizedException.class)
+    public void testAddBrowseNotAuthorized2() throws Exception {
+        String name = "myTopic";
+        ActiveMQDestination dest = new ActiveMQTopic(name);
+
+        Subject subject = new PermsSubject() {
+            @Override
+            public boolean isPermitted(Permission toCheck) {
+                Permission assigned = createPerm("topic:myTopic:read");
+                //read rights != browse rights
+                assertNotEquals(assigned.toString(), toCheck.toString());
+                return assigned.implies(toCheck);
+            }
+        };
+        ConnectionContext context = createContext(subject);
+        ConsumerInfo info = new ConsumerInfo(null);
+        info.setDestination(dest);
+        info.setBrowser(true);
+
+        filter.addConsumer(context, info);
+    }
+
     @Test
     public void testAddConsumerAuthorized() throws Exception {
         String name = "myTopic";
