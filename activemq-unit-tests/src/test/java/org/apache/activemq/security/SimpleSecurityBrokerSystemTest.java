@@ -19,11 +19,7 @@ package org.apache.activemq.security;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import junit.framework.Test;
 import org.apache.activemq.CombinationTestSupport;
@@ -38,9 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jms.*;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
+import javax.jms.Queue;
+import javax.management.*;
 import javax.management.openmbean.CompositeData;
 
 /**
@@ -100,15 +95,64 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         sendMessages(session, destination, 1);
 
         // make sure that the JMSXUserID is exposed over JMX
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-        CompositeData[] browse = (CompositeData[]) mbs.invoke(new ObjectName("org.apache.activemq:type=Broker,brokerName=localhost,destinationType=Queue,destinationName=TEST"), "browse", null, null);
-        assertEquals("system", browse[0].get("JMSXUserID"));
+        assertExposedJMSXUserID("TEST");
 
         // And also via JMS.
         MessageConsumer consumer = session.createConsumer(destination);
         Message m = consumer.receive(1000);
         assertTrue(m.propertyExists("JMSXUserID"));
         assertEquals("system",  m.getStringProperty("JMSXUserID"));
+    }
+
+    public void testAuthorizedBrowsingForAdmin() throws Exception {
+        //create a queue only for admin
+        destination = new ActiveMQQueue("TESTBROWSER");
+        Connection connection = factory.createConnection("system", "manager");
+        connections.add(connection);
+        connection.start();
+
+        //send one message
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        sendMessages(session, destination, 1);
+
+        assertExposedJMSXUserID("TESTBROWSER");
+
+        // And also via JMS.
+        QueueBrowser browser = session.createBrowser((Queue)destination);
+        List<Message> messages = Collections.list(browser.getEnumeration());
+        assertTrue(messages.size() == 1);
+        Message m = messages.get(0);
+        assertTrue(m.propertyExists("JMSXUserID"));
+        assertEquals("system",  m.getStringProperty("JMSXUserID"));
+    }
+
+    public void testUnauthorizedBrowsingForGuest() throws Exception {
+        //create a queue only for admin
+        destination = new ActiveMQQueue("USER.TESTFAILBROWSER");
+        Connection connection = factory.createConnection("guest", "password");
+        connections.add(connection);
+        connection.start();
+
+        //send one message
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        sendMessages(session, destination, 1);
+
+        assertExposedJMSXUserID("USER.TESTFAILBROWSER");
+
+        // And also via JMS.
+        QueueBrowser browser = session.createBrowser((Queue)destination);
+        List<Message> messages = Collections.list(browser.getEnumeration());
+        assertTrue(messages.size() == 1);
+        Message m = messages.get(0);
+        assertTrue(m.propertyExists("JMSXUserID"));
+        assertEquals("system",  m.getStringProperty("JMSXUserID"));
+    }
+
+    private static void assertExposedJMSXUserID(String destinationName) throws Exception {
+        // make sure that the JMSXUserID is exposed over JMX
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        CompositeData[] browse = (CompositeData[]) mbs.invoke(new ObjectName("org.apache.activemq:type=Broker,brokerName=localhost,destinationType=Queue,destinationName="+destinationName), "browse", null, null);
+        assertEquals("system", browse[0].get("JMSXUserID"));
     }
 
     public static AuthorizationMap createAuthorizationMap() {
@@ -119,6 +163,14 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         readAccess.put(new ActiveMQTopic(">"), ADMINS);
         readAccess.put(new ActiveMQTopic("USERS.>"), USERS);
         readAccess.put(new ActiveMQTopic("GUEST.>"), GUESTS);
+
+        DestinationMap browseAccess = new DefaultAuthorizationMap();
+        browseAccess.put(new ActiveMQQueue(">"), ADMINS);
+        browseAccess.put(new ActiveMQQueue("USERS.>"), USERS);
+        browseAccess.put(new ActiveMQQueue("GUEST.>"), GUESTS);
+        browseAccess.put(new ActiveMQTopic(">"), ADMINS);
+        browseAccess.put(new ActiveMQTopic("USERS.>"), USERS);
+        browseAccess.put(new ActiveMQTopic("GUEST.>"), GUESTS);
 
         DestinationMap writeAccess = new DefaultAuthorizationMap();
         writeAccess.put(new ActiveMQQueue(">"), ADMINS);
@@ -141,7 +193,7 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         adminAccess.put(new ActiveMQQueue(">"), USERS);
         adminAccess.put(new ActiveMQQueue(">"), GUESTS);
 
-        return new SimpleAuthorizationMap(writeAccess, readAccess, adminAccess);
+        return new SimpleAuthorizationMap(writeAccess, readAccess, adminAccess, browseAccess);
     }
 
     public static class SimpleAuthenticationFactory implements BrokerPlugin {

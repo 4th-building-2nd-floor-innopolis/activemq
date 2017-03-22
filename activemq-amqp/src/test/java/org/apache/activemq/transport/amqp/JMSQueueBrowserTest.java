@@ -59,10 +59,11 @@ public class JMSQueueBrowserTest extends JMSClientTestSupport {
     public static AuthorizationMap createAuthorizationMap() {
         DestinationMap readAccess = new DefaultAuthorizationMap();
         readAccess.put(new ActiveMQQueue(">"), USERS);
+        readAccess.put(new ActiveMQQueue(">"), BROWSERS);
 
         DestinationMap browseAccess = new DefaultAuthorizationMap();
         browseAccess.put(new ActiveMQQueue(">"), BROWSERS);
-
+//
         DestinationMap writeAccess = new DefaultAuthorizationMap();
         writeAccess.put(new ActiveMQQueue(">"), USERS);
 
