@@ -81,6 +81,7 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
     private String adminPermissionGroupSearchFilter = "(cn=Admin)";
     private String readPermissionGroupSearchFilter = "(cn=Read)";
     private String writePermissionGroupSearchFilter = "(cn=Write)";
+    private String browsePermissionGroupSearchFilter = "(cn=Browse)";
 
     private boolean legacyGroupMapping = true;
     private String groupObjectClass = "groupOfNames";
@@ -493,6 +494,8 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
             case ADMIN:
                 entry.setAdminACLs(acls);
                 break;
+            case BROWSE:
+                entry.setBrowseACLs(acls);
             default:
                 throw new IllegalArgumentException("Unknown permission " + permissionType + ".");
         }
@@ -627,6 +630,9 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
                 break;
             case WRITE:
                 filter = writePermissionGroupSearchFilter;
+                break;
+            case BROWSE:
+                filter = browsePermissionGroupSearchFilter;
                 break;
             default:
                 throw new IllegalArgumentException("Unknown permission type " + permissionType);
@@ -1077,6 +1083,14 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
         this.writePermissionGroupSearchFilter = writePermissionGroupSearchFilter;
     }
 
+    public String getBrowsePermissionGroupSearchFilter() {
+        return browsePermissionGroupSearchFilter;
+    }
+
+    public void setBrowsePermissionGroupSearchFilter(String browsePermissionGroupSearchFilter) {
+        this.browsePermissionGroupSearchFilter = browsePermissionGroupSearchFilter;
+    }
+
     public boolean isLegacyGroupMapping() {
         return legacyGroupMapping;
     }
@@ -1147,7 +1161,7 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
     }
 
     protected static enum PermissionType {
-        READ, WRITE, ADMIN;
+        READ, WRITE, ADMIN, BROWSE;
     }
 
     /**

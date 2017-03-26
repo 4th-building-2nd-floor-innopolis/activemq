@@ -45,6 +45,11 @@ public class XBeanAuthorizationEntry extends AuthorizationEntry implements Initi
         writeRoles = roles;
     }
 
+    @Override
+    public void setBrowse(String roles) throws Exception {
+        browseRoles = roles;
+    }
+
     /**
      * JSR-250 callback wrapper; converts checked exceptions to runtime exceptions
      *
@@ -76,6 +81,10 @@ public class XBeanAuthorizationEntry extends AuthorizationEntry implements Initi
 
         if (readRoles != null) {
             setReadACLs(parseACLs(readRoles));
+        }
+
+        if (browseRoles != null) {
+            setBrowseACLs(parseACLs(browseRoles));
         }
     }
 

@@ -148,7 +148,7 @@ public class AuthorizationBroker extends BrokerFilter implements SecurityAdminMB
     public Subscription addConsumer(ConnectionContext context, ConsumerInfo info) throws Exception {
         final SecurityContext securityContext = checkSecurityContext(context);
 
-        Set<?> allowedACLs = AuthorizationMapHelper.getACLs(authorizationMap, info);
+        Set<?> allowedACLs = AuthorizationMapHelper.getReadOrBrowseAllowedACLs(authorizationMap, info);
 
 
         if (!securityContext.isBrokerContext() && allowedACLs != null && !securityContext.isInOneOf(allowedACLs) ) {

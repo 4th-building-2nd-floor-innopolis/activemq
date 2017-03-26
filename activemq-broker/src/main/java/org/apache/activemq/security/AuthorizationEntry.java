@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,10 @@ package org.apache.activemq.security;
 
 import org.apache.activemq.filter.DestinationMapEntry;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * Represents an entry in a {@link DefaultAuthorizationMap} for assigning
@@ -28,44 +31,29 @@ import java.util.*;
 @SuppressWarnings("rawtypes")
 public class AuthorizationEntry extends DestinationMapEntry {
 
+    private Set<Object> readACLs = emptySet();
+    private Set<Object> writeACLs = emptySet();
+    private Set<Object> adminACLs = emptySet();
+    private Set<Object> browseACLs = emptySet();
+
     protected String adminRoles;
     protected String readRoles;
     protected String writeRoles;
     protected String browseRoles;
-    private Set<Object> readACLs = emptySet();
-    private Set<Object> writeACLs = emptySet();
-    private Set<Object> adminACLs = emptySet();
 
-    public Set<Object> getBrowseACLs() {
-        return browseACLs;
-    }
-
-    public void setBrowseACLs(Set<Object> browseACLs) {
-        this.browseACLs = browseACLs;
-    }
-
-    private Set<Object> browseACLs = emptySet();
     private String groupClass;
-
-    public String getBrowseRoles() {
-        return browseRoles;
-    }
-
-    public void setBrowseRoles(String browseRoles) {
-        this.browseRoles = browseRoles;
-    }
 
     public String getGroupClass() {
         return groupClass;
     }
 
-    public void setGroupClass(String groupClass) {
-        this.groupClass = groupClass;
-    }
-
     @SuppressWarnings("unchecked")
     private Set<Object> emptySet() {
         return Collections.EMPTY_SET;
+    }
+
+    public void setGroupClass(String groupClass) {
+        this.groupClass = groupClass;
     }
 
     public Set<Object> getAdminACLs() {
@@ -92,6 +80,14 @@ public class AuthorizationEntry extends DestinationMapEntry {
         this.writeACLs = writeACLs;
     }
 
+    public Set<Object> getBrowseACLs() {
+        return browseACLs;
+    }
+
+    public void setBrowseACLs(Set<Object> browseACLs) {
+        this.browseACLs = browseACLs;
+    }
+
     // helper methods for easier configuration in Spring
     // ACLs are already set in the afterPropertiesSet method to ensure that
     // groupClass is set first before
@@ -114,7 +110,12 @@ public class AuthorizationEntry extends DestinationMapEntry {
         writeRoles = roles;
         setWriteACLs(parseACLs(writeRoles));
     }
-    // todo: add same method
+
+    public void setBrowse(String roles) throws Exception {
+        browseRoles = roles;
+        setBrowseACLs(parseACLs(browseRoles));
+    }
+
 
     protected Set<Object> parseACLs(String roles) throws Exception {
         Set<Object> answer = new HashSet<Object>();
@@ -149,6 +150,15 @@ public class AuthorizationEntry extends DestinationMapEntry {
 
     @Override
     public int hashCode() {
-        return Objects.hash(readACLs, writeACLs, adminACLs, adminRoles, readRoles, writeRoles, groupClass);
+        int result = readACLs != null ? readACLs.hashCode() : 0;
+        result = 31 * result + (writeACLs != null ? writeACLs.hashCode() : 0);
+        result = 31 * result + (adminACLs != null ? adminACLs.hashCode() : 0);
+        result = 31 * result + (browseACLs != null ? browseACLs.hashCode() : 0);
+        result = 31 * result + (adminRoles != null ? adminRoles.hashCode() : 0);
+        result = 31 * result + (readRoles != null ? readRoles.hashCode() : 0);
+        result = 31 * result + (writeRoles != null ? writeRoles.hashCode() : 0);
+        result = 31 * result + (browseRoles != null ? browseRoles.hashCode() : 0);
+        result = 31 * result + (groupClass != null ? groupClass.hashCode() : 0);
+        return result;
     }
 }
