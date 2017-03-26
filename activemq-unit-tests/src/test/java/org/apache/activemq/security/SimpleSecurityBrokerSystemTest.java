@@ -16,11 +16,6 @@
  */
 package org.apache.activemq.security;
 
-import java.lang.management.ManagementFactory;
-import java.net.URL;
-import java.security.Principal;
-import java.util.*;
-
 import junit.framework.Test;
 import org.apache.activemq.CombinationTestSupport;
 import org.apache.activemq.broker.Broker;
@@ -35,8 +30,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.jms.*;
 import javax.jms.Queue;
-import javax.management.*;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
+import java.lang.management.ManagementFactory;
+import java.net.URL;
+import java.security.Principal;
+import java.util.*;
 
 /**
  * Tests that the broker allows/fails access to destinations based on the
@@ -86,16 +86,7 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
      * @throws javax.jms.JMSException
      */
     public void testPopulateJMSXUserID() throws Exception {
-        destination = new ActiveMQQueue("TEST");
-        Connection connection = factory.createConnection("system", "manager");
-        connections.add(connection);
-        connection.start();
-
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        sendMessages(session, destination, 1);
-
-        // make sure that the JMSXUserID is exposed over JMX
-        assertExposedJMSXUserID("TEST");
+        Session session = setupQueueWithOneMessage("TEST");
 
         // And also via JMS.
         MessageConsumer consumer = session.createConsumer(destination);
@@ -105,17 +96,7 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
     }
 
     public void testAuthorizedBrowsingForAdmin() throws Exception {
-        //create a queue only for admin
-        destination = new ActiveMQQueue("TESTBROWSER");
-        Connection connection = factory.createConnection("system", "manager");
-        connections.add(connection);
-        connection.start();
-
-        //send one message
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        sendMessages(session, destination, 1);
-
-        assertExposedJMSXUserID("TESTBROWSER");
+        Session session = setupQueueWithOneMessage("TESTBROWSER");
 
         // try to browse as system
         QueueBrowser browser = session.createBrowser((Queue)destination);
@@ -126,37 +107,41 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         assertEquals("system",  m.getStringProperty("JMSXUserID"));
     }
 
-
     public void testUnauthorizedBrowsingForGuest() throws Exception {
         //create a queue only for admin
-        {
-            destination = new ActiveMQQueue("USERS.TESTFAILBROWSER");
-            Connection connection = factory.createConnection("system", "manager");
-            connections.add(connection);
-            connection.start();
-
-            //send one message
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            sendMessages(session, destination, 1);
-
-            assertExposedJMSXUserID("USERS.TESTFAILBROWSER");
-        }
+        setupQueueWithOneMessage("USERS.TESTFAILBROWSER");
         //try to browse as guest
-        {
-            Connection connection = factory.createConnection("guest", "password");
-            connections.add(connection);
-            connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            QueueBrowser browser = session.createBrowser((Queue) destination);
+        Session session = connectAndCreateSession("guest", "password");
+        QueueBrowser browser = session.createBrowser((Queue) destination);
 
-            try {
-                // Bad guest account
-                Collections.list(browser.getEnumeration());
-                fail("Expected JMSSecurityException.");
-            } catch (JMSSecurityException e) {
-                // NOOP
-            }
+        try {
+            // Bad guest account
+            Collections.list(browser.getEnumeration());
+            fail("Expected JMSSecurityException.");
+        } catch (JMSSecurityException e) {
+            // NOOP
         }
+    }
+
+    /**
+     * send dummy message to a given queue
+     */
+    private Session setupQueueWithOneMessage(String queueName) throws Exception {
+
+        destination = new ActiveMQQueue(queueName);
+        Session session = connectAndCreateSession("system", "manager");
+        sendMessages(session, destination, 1);
+        assertExposedJMSXUserID(queueName);
+        return session;
+    }
+
+    private Session connectAndCreateSession(String userName, String password) throws JMSException {
+        Connection connection = factory.createConnection(userName, password);
+        connections.add(connection);
+        connection.start();
+
+        //send one message
+        return connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     }
 
     private static void assertExposedJMSXUserID(String destinationName) throws Exception {
