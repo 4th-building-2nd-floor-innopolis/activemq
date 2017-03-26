@@ -117,7 +117,7 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
 
         assertExposedJMSXUserID("TESTBROWSER");
 
-        // And also via JMS.
+        // try to browse as system
         QueueBrowser browser = session.createBrowser((Queue)destination);
         List<Message> messages = Collections.list(browser.getEnumeration());
         assertTrue(messages.size() == 1);
@@ -126,26 +126,37 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         assertEquals("system",  m.getStringProperty("JMSXUserID"));
     }
 
+
     public void testUnauthorizedBrowsingForGuest() throws Exception {
         //create a queue only for admin
-        destination = new ActiveMQQueue("USER.TESTFAILBROWSER");
-        Connection connection = factory.createConnection("guest", "password");
-        connections.add(connection);
-        connection.start();
+        {
+            destination = new ActiveMQQueue("USERS.TESTFAILBROWSER");
+            Connection connection = factory.createConnection("system", "manager");
+            connections.add(connection);
+            connection.start();
 
-        //send one message
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        sendMessages(session, destination, 1);
+            //send one message
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            sendMessages(session, destination, 1);
 
-        assertExposedJMSXUserID("USER.TESTFAILBROWSER");
+            assertExposedJMSXUserID("USERS.TESTFAILBROWSER");
+        }
+        //try to browse as guest
+        {
+            Connection connection = factory.createConnection("guest", "password");
+            connections.add(connection);
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            QueueBrowser browser = session.createBrowser((Queue) destination);
 
-        // And also via JMS.
-        QueueBrowser browser = session.createBrowser((Queue)destination);
-        List<Message> messages = Collections.list(browser.getEnumeration());
-        assertTrue(messages.size() == 1);
-        Message m = messages.get(0);
-        assertTrue(m.propertyExists("JMSXUserID"));
-        assertEquals("system",  m.getStringProperty("JMSXUserID"));
+            try {
+                // Bad guest account
+                Collections.list(browser.getEnumeration());
+                fail("Expected JMSSecurityException.");
+            } catch (JMSSecurityException e) {
+                // NOOP
+            }
+        }
     }
 
     private static void assertExposedJMSXUserID(String destinationName) throws Exception {
@@ -223,8 +234,8 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
     public void initCombos() {
         addCombinationValues("authorizationPlugin",
                              new Object[] {new AuthorizationPlugin(createAuthorizationMap())});
-        addCombinationValues("authenticationPlugin", new Object[] {new SimpleAuthenticationFactory(),
-                                                                   new JaasAuthenticationPlugin()});
+        addCombinationValues("authenticationPlugin", new Object[] {new SimpleAuthenticationFactory()/*,
+                                                                   new JaasAuthenticationPlugin()*/});
     }
 
     protected BrokerService createBroker() throws Exception {

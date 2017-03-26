@@ -746,7 +746,7 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
 
     @Override
     public Set<?> getTempDestinationBrowseACLs() {
-        return null;
+        return null; //fixme: should fail
     }
 
     /**
@@ -795,7 +795,7 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
 
     @Override
     public Set<?> getBrowseACLs(ActiveMQDestination destination) {
-        return null;
+        return null; //fixme: should fail
     }
 
     /**
