@@ -164,8 +164,8 @@ objectClass: top
 member: cn=users
 member: cn=admins
 
-dn: cn=browser,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
-cn: browser
+dn: cn=browse,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
+cn: browse
 member: cn=users
 member: cn=admins
 member: cn=browsers
