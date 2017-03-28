@@ -56,7 +56,7 @@ public class CachedLDAPSecurityLegacyTest extends AbstractLdapTestUnit {
     @Before
     public void setup() throws Exception {
         System.setProperty("ldapPort", String.valueOf(getLdapServer().getPort()));
-        
+
         broker = BrokerFactory.createBroker("xbean:org/apache/activemq/security/activemq-apacheds-legacy.xml");
         broker.start();
         broker.waitUntilStarted();
@@ -115,9 +115,11 @@ public class CachedLDAPSecurityLegacyTest extends AbstractLdapTestUnit {
     }
 
     @Test
-    public void testReceiveDeniedForBrowsers() throws Exception {
+    public void testBrowseDeniedForWriters() throws Exception {
+        String testQueueName = "TEST.FOO";
+        sendTestMessage(testQueueName);
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
-        Connection browserConnection = factory.createQueueConnection("browser", "sunflower");
+        Connection browserConnection = factory.createQueueConnection("writer", "sunflower");
         Session browserSession = browserConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         browserConnection.start();
 
@@ -131,7 +133,25 @@ public class CachedLDAPSecurityLegacyTest extends AbstractLdapTestUnit {
     }
 
     @Test
-    public void testBrowser() throws Exception {
+    public void testReceiveDeniedForBrowsers() throws Exception {
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
+        Connection browserConnection = factory.createQueueConnection("writer", "sunflower");
+        Session browserSession = browserConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        browserConnection.start();
+
+        Queue testQueue = browserSession.createQueue("TEST.FOO");
+
+        QueueBrowser browser = browserSession.createBrowser(testQueue);
+
+        try {
+            Collections.list(browser.getEnumeration());
+            fail("expect auth exception");
+        } catch (JMSException expected) {
+        }
+    }
+
+    @Test
+    public void testBrowseForBrowsers() throws Exception {
         String testQueueName = "TEST.FOO";
         sendTestMessage(testQueueName);
 

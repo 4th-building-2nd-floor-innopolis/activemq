@@ -38,6 +38,8 @@
                                     groups="browsers"/>
                 <authenticationUser username="reader" password="sunflower"
                                     groups="readers"/>
+                <authenticationUser username="writer" password="sunflower"
+                                    groups="writers"/>
 			</users>
 		</simpleAuthenticationPlugin>
 

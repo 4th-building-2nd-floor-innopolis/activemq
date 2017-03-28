@@ -73,6 +73,12 @@ member: uid=reader
 objectClass: groupOfNames
 objectClass: top
 
+dn: cn=writers,ou=Group,ou=ActiveMQ,ou=system
+cn: writers
+member: uid=writer
+objectClass: groupOfNames
+objectClass: top
+
 ##################
 ## Define users ##
 ##################
@@ -113,6 +119,13 @@ objectclass: person
 objectclass: top
 cn: Jane Doe
 sn: Doe
+
+dn: uid=writer,ou=User,ou=ActiveMQ,ou=system
+uid: writer
+userPassword: {SSHA}YvMAkkd66cDecNoejo8jnw5uUUBziyl0
+objectClass: account
+objectClass: simpleSecurityObject
+objectClass: top
 
 #########################
 ## Define destinations ##
@@ -163,6 +176,7 @@ objectClass: groupOfNames
 objectClass: top
 member: cn=users
 member: cn=admins
+member: cn=writers
 
 dn: cn=browse,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
 cn: browse
@@ -249,6 +263,7 @@ member: cn=admins
 member: cn=users
 member: cn=browsers
 member: cn=readers
+member: cn=writers
 objectClass: groupOfNames
 objectClass: top
 
@@ -258,6 +273,7 @@ member: cn=admins
 member: cn=users
 member: cn=browsers
 member: cn=readers
+member: cn=writers
 objectClass: groupOfNames
 objectClass: top
 
@@ -267,6 +283,7 @@ member: cn=admins
 member: cn=users
 member: cn=browsers
 member: cn=readers
+member: cn=writers
 objectClass: groupOfNames
 objectClass: top
 
