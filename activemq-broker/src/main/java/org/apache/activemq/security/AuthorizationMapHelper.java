@@ -24,7 +24,7 @@ public final class AuthorizationMapHelper {
             Set<?> browserAllowedACLs = destination.isTemporary() ?
                     authorizationMap.getTempDestinationBrowseACLs() :
                     authorizationMap.getBrowseACLs(destination);
-            return Sets.union(allowedACLs, browserAllowedACLs); // fixme: переместить логику в authorization map???
+            return Sets.union(allowedACLs, browserAllowedACLs);
         }
         return allowedACLs;
     }

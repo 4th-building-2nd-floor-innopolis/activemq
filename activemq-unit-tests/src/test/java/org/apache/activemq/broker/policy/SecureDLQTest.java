@@ -52,7 +52,9 @@ public class SecureDLQTest extends DeadLetterTestSupport {
         adminAccess.put(new ActiveMQQueue("ActiveMQ.DLQ"), ADMINS);
         adminAccess.put(new ActiveMQTopic("ActiveMQ.Advisory.>"), WILDCARD);
 
-        return new SimpleAuthorizationMap(writeAccess, readAccess, adminAccess);
+        DefaultAuthorizationMap browseAccess = new DefaultAuthorizationMap();
+
+        return new SimpleAuthorizationMap(writeAccess, readAccess, adminAccess, browseAccess);
     }
 
     @Override

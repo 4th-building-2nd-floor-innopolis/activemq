@@ -41,14 +41,10 @@ public class SimpleAuthorizationMap implements AuthorizationMap {
     public SimpleAuthorizationMap() {
     }
 
-    public SimpleAuthorizationMap(DestinationMap writeACLs, DestinationMap readACLs, DestinationMap adminACLs) {
+    public SimpleAuthorizationMap(DestinationMap writeACLs, DestinationMap readACLs, DestinationMap adminACLs, DestinationMap browseACLs) {
         this.writeACLs = writeACLs;
         this.readACLs = readACLs;
         this.adminACLs = adminACLs;
-    }
-
-    public SimpleAuthorizationMap(DestinationMap writeACLs, DestinationMap readACLs, DestinationMap adminACLs, DestinationMap browseACLs) {
-        this(writeACLs, readACLs, adminACLs);
         this.browseACLs = browseACLs;
     }
 
