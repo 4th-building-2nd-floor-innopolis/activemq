@@ -61,6 +61,23 @@ member: uid=jdoe,ou=User,ou=ActiveMQ,ou=system
 objectClass: groupOfNames
 objectClass: top
 
+dn: cn=browsers,ou=Group,ou=ActiveMQ,ou=system
+cn: browsers
+member: uid=browser
+objectClass: groupOfNames
+objectClass: top
+
+dn: cn=readers,ou=Group,ou=ActiveMQ,ou=system
+cn: readers
+member: uid=reader
+objectClass: groupOfNames
+objectClass: top
+
+dn: cn=writers,ou=Group,ou=ActiveMQ,ou=system
+cn: writers
+member: uid=writer
+objectClass: groupOfNames
+objectClass: top
 
 ##################
 ## Define users ##
@@ -79,6 +96,19 @@ objectClass: account
 objectClass: simpleSecurityObject
 objectClass: top
 
+dn: uid=browser,ou=User,ou=ActiveMQ,ou=system
+uid: browser
+userPassword: {SSHA}YvMAkkd66cDecNoejo8jnw5uUUBziyl0
+objectClass: account
+objectClass: simpleSecurityObject
+objectClass: top
+
+dn: uid=reader,ou=User,ou=ActiveMQ,ou=system
+uid: reader
+userPassword: {SSHA}YvMAkkd66cDecNoejo8jnw5uUUBziyl0
+objectClass: account
+objectClass: simpleSecurityObject
+objectClass: top
 
 dn: uid=jdoe,ou=User,ou=ActiveMQ,ou=system
 uid: jdoe
@@ -90,6 +120,12 @@ objectclass: top
 cn: Jane Doe
 sn: Doe
 
+dn: uid=writer,ou=User,ou=ActiveMQ,ou=system
+uid: writer
+userPassword: {SSHA}YvMAkkd66cDecNoejo8jnw5uUUBziyl0
+objectClass: account
+objectClass: simpleSecurityObject
+objectClass: top
 
 #########################
 ## Define destinations ##
@@ -130,6 +166,7 @@ dn: cn=read,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
 cn: read
 member: cn=users,ou=Group,ou=ActiveMQ,ou=system
 member: cn=admins,ou=Group,ou=ActiveMQ,ou=system
+member: cn=readers,ou=Group,ou=ActiveMQ,ou=system
 objectClass: groupOfNames
 objectClass: top
 
@@ -139,6 +176,15 @@ objectClass: groupOfNames
 objectClass: top
 member: cn=users,ou=Group,ou=ActiveMQ,ou=system
 member: cn=admins,ou=Group,ou=ActiveMQ,ou=system
+member: cn=writers,ou=Group,ou=ActiveMQ,ou=system
+
+dn: cn=browse,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
+cn: browse
+member: cn=users,ou=Group,ou=ActiveMQ,ou=system
+member: cn=admins,ou=Group,ou=ActiveMQ,ou=system
+member: cn=browsers,ou=Group,ou=ActiveMQ,ou=system
+objectClass: groupOfNames
+objectClass: top
 
 ## TEST.FOOBAR
 
@@ -246,6 +292,9 @@ dn: cn=read,cn=ActiveMQ.Advisory.$,ou=Topic,ou=Destination,ou=ActiveMQ,ou=system
 cn: read
 member: cn=admins,ou=Group,ou=ActiveMQ,ou=system
 member: cn=users,ou=Group,ou=ActiveMQ,ou=system
+member: cn=browsers,ou=Group,ou=ActiveMQ,ou=system
+member: cn=readers,ou=Group,ou=ActiveMQ,ou=system
+member: cn=writers,ou=Group,ou=ActiveMQ,ou=system
 objectClass: groupOfNames
 objectClass: top
 
@@ -253,6 +302,9 @@ dn: cn=write,cn=ActiveMQ.Advisory.$,ou=Topic,ou=Destination,ou=ActiveMQ,ou=syste
 cn: write
 member: cn=admins,ou=Group,ou=ActiveMQ,ou=system
 member: cn=users,ou=Group,ou=ActiveMQ,ou=system
+member: cn=browsers,ou=Group,ou=ActiveMQ,ou=system
+member: cn=readers,ou=Group,ou=ActiveMQ,ou=system
+member: cn=writers,ou=Group,ou=ActiveMQ,ou=system
 objectClass: groupOfNames
 objectClass: top
 
@@ -260,6 +312,9 @@ dn: cn=admin,cn=ActiveMQ.Advisory.$,ou=Topic,ou=Destination,ou=ActiveMQ,ou=syste
 cn: admin
 member: cn=admins,ou=Group,ou=ActiveMQ,ou=system
 member: cn=users,ou=Group,ou=ActiveMQ,ou=system
+member: cn=browsers,ou=Group,ou=ActiveMQ,ou=system
+member: cn=readers,ou=Group,ou=ActiveMQ,ou=system
+member: cn=writers,ou=Group,ou=ActiveMQ,ou=system
 objectClass: groupOfNames
 objectClass: top
 

@@ -55,6 +55,9 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
     static final GroupPrincipal GUESTS = new GroupPrincipal("guests");
     static final GroupPrincipal USERS = new GroupPrincipal("users");
     static final GroupPrincipal ADMINS = new GroupPrincipal("admins");
+    static final GroupPrincipal READERS = new GroupPrincipal("readers");
+    static final GroupPrincipal BROWSERS = new GroupPrincipal("browsers");
+    static final GroupPrincipal WRITERS = new GroupPrincipal("writers");
 
     protected LdapConnection connection;
     protected SimpleCachedLDAPAuthorizationMap map;
@@ -84,9 +87,10 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
     public void testQuery() throws Exception {
         map.query();
         Set<?> readACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + readACLs, 2, readACLs.size());
+        assertEquals("set size: " + readACLs, 3, readACLs.size());
         assertTrue("Contains admin group", readACLs.contains(ADMINS));
         assertTrue("Contains users group", readACLs.contains(USERS));
+        assertTrue("Contains readers group", readACLs.contains(READERS));
 
         Set<?> failedACLs = map.getReadACLs(new ActiveMQQueue("FAILED"));
         assertEquals("set size: " + failedACLs, 0, failedACLs.size());
@@ -97,9 +101,10 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         map.setRefreshInterval(1);
         map.query();
         Set<?> readACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + readACLs, 2, readACLs.size());
+        assertEquals("set size: " + readACLs, 3, readACLs.size());
         assertTrue("Contains admin group", readACLs.contains(ADMINS));
         assertTrue("Contains users group", readACLs.contains(USERS));
+        assertTrue("Contains readers group", readACLs.contains(READERS));
 
         Set<?> failedACLs = map.getReadACLs(new ActiveMQQueue("FAILED"));
         assertEquals("set size: " + failedACLs, 0, failedACLs.size());
@@ -143,9 +148,12 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
     public void testAdvisory() throws Exception {
         map.query();
         Set<?> readACLs = map.getReadACLs(new ActiveMQTopic("ActiveMQ.Advisory.Connection"));
-        assertEquals("set size: " + readACLs, 2, readACLs.size());
+        assertEquals("set size: " + readACLs, 5, readACLs.size());
         assertTrue("Contains admin group", readACLs.contains(ADMINS));
         assertTrue("Contains users group", readACLs.contains(USERS));
+        assertTrue("Contains readers group", readACLs.contains(READERS));
+        assertTrue("Contains browsers group", readACLs.contains(BROWSERS));
+        assertTrue("Contains writers group", readACLs.contains(WRITERS));
     }
 
     @Test
@@ -185,7 +193,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         map.query();
 
         Set<?> failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         LdifReader reader = new LdifReader(getRemoveLdif());
 
@@ -210,7 +218,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
 
         // Test for a destination rename
         Set<?> failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         connection.rename(new Dn("cn=TEST.FOO," + getQueueBaseDn()),
                 new Rdn("cn=TEST.BAR"));
@@ -222,7 +230,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
 
 
         failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.BAR"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
     }
 
     @Test
@@ -238,7 +246,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         assertEquals("set size: " + failedACLs, 0, failedACLs.size());
 
         failedACLs = map.getWriteACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         connection.rename(new Dn("cn=Write,cn=TEST.FOO," + getQueueBaseDn()),
                 new Rdn("cn=Read"));
@@ -246,7 +254,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         Thread.sleep(2000);
 
         failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         failedACLs = map.getWriteACLs(new ActiveMQQueue("TEST.FOO"));
         assertEquals("set size: " + failedACLs, 0, failedACLs.size());
@@ -258,7 +266,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
 
         // Change permission entry
         Set<?> failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         Dn dn = new Dn("cn=read,cn=TEST.FOO," + getQueueBaseDn());
 
@@ -271,7 +279,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         Thread.sleep(2000);
 
         failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 1, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
 
         // Change destination entry
         request = new ModifyRequestImpl();
@@ -283,7 +291,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         Thread.sleep(2000);
 
         failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 1, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
     }
 
     @Test
@@ -307,7 +315,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         assertEquals("set size: " + failedACLs, 0, failedACLs.size());
 
         failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         getLdapServer().stop();
 
@@ -325,7 +333,7 @@ public abstract class AbstractCachedLDAPAuthorizationMapLegacyTest extends Abstr
         });
 
         failedACLs = map.getReadACLs(new ActiveMQQueue("TEST.FOO"));
-        assertEquals("set size: " + failedACLs, 2, failedACLs.size());
+        assertEquals("set size: " + failedACLs, 3, failedACLs.size());
 
         getLdapServer().start();
 
