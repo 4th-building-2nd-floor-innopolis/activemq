@@ -28,6 +28,8 @@ import java.util.Set;
  */
 public class ActiveMQWildcardPermission extends WildcardPermission {
 
+    public static final String READ_PERMISSION = "read";
+    public static final String BROWSE_PERMISSION = "browse";
     private final boolean caseSensitive;
 
     public ActiveMQWildcardPermission(String wildcardString) {
@@ -41,11 +43,11 @@ public class ActiveMQWildcardPermission extends WildcardPermission {
 
     @Override
     public boolean implies(Permission p) {
+
         // By default only supports comparisons with other WildcardPermissions
         if (!(p instanceof WildcardPermission)) {
             return false;
         }
-
         WildcardPermission wp = (WildcardPermission) p;
 
         List<Set<String>> otherParts = getParts(wp);
@@ -68,7 +70,12 @@ public class ActiveMQWildcardPermission extends WildcardPermission {
                             otherToken = otherToken.toLowerCase();
                         }
                         if (!matches(token, otherToken)) {
-                            return false;
+                            // TODO: Refactor this
+                            if(token.equals(READ_PERMISSION) && otherToken.equals(BROWSE_PERMISSION) && isLastToken(i)) {
+                                continue;
+                            } else {
+                                return false;
+                            }
                         }
                     }
                 }
@@ -85,6 +92,10 @@ public class ActiveMQWildcardPermission extends WildcardPermission {
         }
 
         return true;
+    }
+
+    private boolean isLastToken(final int i) {
+        return i == getParts().size() - 1;
     }
 
     /**

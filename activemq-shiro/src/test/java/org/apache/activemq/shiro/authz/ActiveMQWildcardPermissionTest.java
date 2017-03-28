@@ -114,6 +114,8 @@ public class ActiveMQWildcardPermissionTest {
         assertMatch("*:ActiveMQ.Advisory*:*", "foo:ActiveMQ.Advisory.Connection:read");
         assertMatch("*:ActiveMQ.Advisory*:*", "foo:ActiveMQ.Advisory.");
         assertMatch("topic", "topic:TEST:*");
+        assertMatch("topic:TEST:read", "topic:TEST:browse");
+        assertNoMatch("topic:read:test", "topic:browse:test");
         assertNoMatch("*:ActiveMQ*", "topic:TEST:*");
         assertMatch("topic:ActiveMQ.Advisory*", "topic:ActiveMQ.Advisory.Connection:create");
         assertMatch("foo?ar", "foobar");
