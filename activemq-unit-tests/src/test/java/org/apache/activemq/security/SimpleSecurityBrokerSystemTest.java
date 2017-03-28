@@ -95,8 +95,16 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         assertEquals("system",  m.getStringProperty("JMSXUserID"));
     }
 
-    public void testAuthorizedBrowsingForAdmin() throws Exception {
-        Session session = setupQueueWithOneMessage("TESTBROWSER");
+    /**
+     * admins have write and read access for {@code ONLYREAD.TESTBROWSER}.
+     * <ol>
+     * <li>create {@code ONLYREAD.TESTBROWSER} as admin and push 1 message</li>
+     * <li>connect as admin browser and try to watch the pushed message</li>
+     * <li>should read the pushed message</li>
+     * </ol>
+     */
+    public void testAuthorizedBrowsingIfReadAccessIsGiven() throws Exception {
+        Session session = setupQueueWithOneMessage("ONLYREAD.TESTBROWSER");
 
         // try to browse as system
         QueueBrowser browser = session.createBrowser((Queue)destination);
@@ -107,6 +115,35 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         assertEquals("system",  m.getStringProperty("JMSXUserID"));
     }
 
+    /**
+     * guests have only browse access for {@code ONLY_BROWSE_GUEST.TESTBROWSER}.
+     * <ol>
+     * <li>create {@code ONLY_BROWSE_GUEST.TESTBROWSER} as admin and push 1 message</li>
+     * <li>connect as guest browser and try to watch the pushed message</li>
+     * <li>should read the pushed message</li>
+     * </ol>
+     */
+    public void testAuthorizedBrowsingIfOnlyBrowseAccessIsGiven() throws Exception {
+        setupQueueWithOneMessage("ONLY_BROWSE_GUEST.TESTBROWSER");
+
+        // try to browse as system
+        Session session = connectAndCreateSession("guest", "password");
+        QueueBrowser browser = session.createBrowser((Queue)destination);
+        List<Message> messages = Collections.list(browser.getEnumeration());
+        assertTrue(messages.size() == 1);
+        Message m = messages.get(0);
+        assertTrue(m.propertyExists("JMSXUserID"));
+        assertEquals("system",  m.getStringProperty("JMSXUserID"));
+    }
+
+    /**
+     * guests do not have access for {@code USERS.TESTFAILBROWSER} at all.
+     * <ol>
+     * <li>create {@code USERS.TESTFAILBROWSER} as admin and push 1 message</li>
+     * <li>connect as guest browser and try to watch the pushed message</li>
+     * <li>should raise an exception</li>
+     * </ol>
+     */
     public void testUnauthorizedBrowsingForGuest() throws Exception {
         //create a queue only for admin
         setupQueueWithOneMessage("USERS.TESTFAILBROWSER");
@@ -161,10 +198,9 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
         readAccess.put(new ActiveMQTopic("GUEST.>"), GUESTS);
 
         DestinationMap browseAccess = new DefaultAuthorizationMap();
-        browseAccess.put(new ActiveMQQueue(">"), ADMINS);
         browseAccess.put(new ActiveMQQueue("USERS.>"), USERS);
         browseAccess.put(new ActiveMQQueue("GUEST.>"), GUESTS);
-        browseAccess.put(new ActiveMQTopic(">"), ADMINS);
+        browseAccess.put(new ActiveMQQueue("ONLY_BROWSE_GUEST.>"), GUESTS);
         browseAccess.put(new ActiveMQTopic("USERS.>"), USERS);
         browseAccess.put(new ActiveMQTopic("GUEST.>"), GUESTS);
 
@@ -219,8 +255,8 @@ public class SimpleSecurityBrokerSystemTest extends SecurityTestSupport {
     public void initCombos() {
         addCombinationValues("authorizationPlugin",
                              new Object[] {new AuthorizationPlugin(createAuthorizationMap())});
-        addCombinationValues("authenticationPlugin", new Object[] {new SimpleAuthenticationFactory()/*,
-                                                                   new JaasAuthenticationPlugin()*/});
+        addCombinationValues("authenticationPlugin", new Object[] {new SimpleAuthenticationFactory(),
+                                                                   new JaasAuthenticationPlugin()});
     }
 
     protected BrokerService createBroker() throws Exception {

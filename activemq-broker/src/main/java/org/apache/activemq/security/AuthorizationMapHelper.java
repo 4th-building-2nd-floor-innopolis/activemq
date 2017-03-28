@@ -1,5 +1,6 @@
 package org.apache.activemq.security;
 
+import com.google.common.collect.Sets;
 import org.apache.activemq.command.ActiveMQDestination;
 import org.apache.activemq.command.ConsumerInfo;
 
@@ -16,15 +17,14 @@ public final class AuthorizationMapHelper {
     public static Set<?> getReadOrBrowseAllowedACLs(AuthorizationMap authorizationMap,
                                                     ConsumerInfo info,
                                                     ActiveMQDestination destination) {
-        Set<?> allowedACLs;
+        Set<?> allowedACLs = destination.isTemporary() ?
+                authorizationMap.getTempDestinationReadACLs() :
+                authorizationMap.getReadACLs(destination);
         if (info.isBrowser()) {
-            allowedACLs = destination.isTemporary() ?
+            Set<?> browserAllowedACLs = destination.isTemporary() ?
                     authorizationMap.getTempDestinationBrowseACLs() :
                     authorizationMap.getBrowseACLs(destination);
-        } else {
-            allowedACLs = destination.isTemporary() ?
-                    authorizationMap.getTempDestinationReadACLs() :
-                    authorizationMap.getReadACLs(destination);
+            return Sets.union(allowedACLs, browserAllowedACLs); // fixme: переместить логику в authorization map???
         }
         return allowedACLs;
     }

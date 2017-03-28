@@ -251,8 +251,8 @@ public class AuthorizationFilterTest {
         filter.addConsumer(context, info);
     }
 
-    @Test(expected=UnauthorizedException.class)
-    public void testAddBrowseNotAuthorized2() throws Exception {
+    @Test
+    public void testAddBrowseAuthorized2() throws Exception {
         String name = "myTopic";
         ActiveMQDestination dest = new ActiveMQTopic(name);
 
