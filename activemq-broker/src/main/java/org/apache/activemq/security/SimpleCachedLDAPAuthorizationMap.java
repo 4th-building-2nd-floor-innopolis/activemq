@@ -746,7 +746,9 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
 
     @Override
     public Set<?> getTempDestinationBrowseACLs() {
-        return null; //fixme: should fail
+        checkForUpdates();
+        DefaultAuthorizationMap map = this.map.get();
+        return transcribeSet(map.getTempDestinationBrowseACLs());
     }
 
     /**
@@ -795,7 +797,9 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
 
     @Override
     public Set<?> getBrowseACLs(ActiveMQDestination destination) {
-        return null; //fixme: should fail
+        checkForUpdates();
+        DefaultAuthorizationMap map = this.map.get();
+        return map.getBrowseACLs(destination);
     }
 
     /**

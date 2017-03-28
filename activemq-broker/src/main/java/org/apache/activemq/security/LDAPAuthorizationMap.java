@@ -96,6 +96,8 @@ public class LDAPAuthorizationMap implements AuthorizationMap {
     private String readAttribute;
     private String writeBase;
     private String writeAttribute;
+    private String browseBase;
+    private String browseAttribute;
 
     public LDAPAuthorizationMap() {
         // lets setup some sensible defaults
@@ -116,6 +118,8 @@ public class LDAPAuthorizationMap implements AuthorizationMap {
         readAttribute = "uniqueMember";
         writeBase = "(cn=write)";
         writeAttribute = "uniqueMember";
+        browseBase = "(cn=browse)";
+        browseAttribute = "uniqueMember";
     }
 
     public LDAPAuthorizationMap(Map<String,String> options) {
@@ -169,7 +173,15 @@ public class LDAPAuthorizationMap implements AuthorizationMap {
 
     @Override
     public Set<?> getTempDestinationBrowseACLs() {
-        return null;
+        try {
+            context = open();
+        } catch (NamingException e) {
+            LOG.error(e.toString());
+            return new HashSet<GroupPrincipal>();
+        }
+        SearchControls constraints = new SearchControls();
+        constraints.setReturningAttributes(new String[] {browseAttribute});
+        return getACLs(tempSearchBase, constraints, browseBase, browseAttribute);
     }
 
     public Set<GroupPrincipal> getTempDestinationWriteACLs() {
@@ -207,7 +219,11 @@ public class LDAPAuthorizationMap implements AuthorizationMap {
 
     @Override
     public Set<?> getBrowseACLs(ActiveMQDestination destination) {
-        return null;
+        if (destination.isComposite()) {
+            return getCompositeACLs(destination, browseBase, browseAttribute);
+        }
+        return getACLs(destination, browseBase, browseAttribute);
+
     }
 
     // Properties
