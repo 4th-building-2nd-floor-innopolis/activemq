@@ -496,6 +496,7 @@ public class SimpleCachedLDAPAuthorizationMap implements AuthorizationMap {
                 break;
             case BROWSE:
                 entry.setBrowseACLs(acls);
+                break;
             default:
                 throw new IllegalArgumentException("Unknown permission " + permissionType + ".");
         }
