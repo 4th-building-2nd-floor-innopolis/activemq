@@ -252,7 +252,7 @@ public class AuthorizationFilterTest {
     }
 
     @Test
-    public void testAddBrowseAuthorized2() throws Exception {
+    public void testAddBrowseAuthorizedWithReadPermission() throws Exception {
         String name = "myTopic";
         ActiveMQDestination dest = new ActiveMQTopic(name);
 
@@ -295,7 +295,7 @@ public class AuthorizationFilterTest {
     }
 
     @Test
-    public void testAddBrowserAuthorized() throws Exception {
+    public void testAddBrowserAuthorizedWithBrowsePermission() throws Exception {
         String name = "myTopic";
         ActiveMQDestination dest = new ActiveMQTopic(name);
 
