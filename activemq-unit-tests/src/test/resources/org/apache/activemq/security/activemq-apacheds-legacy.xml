@@ -34,6 +34,10 @@
 					groups="users"/>
 				<authenticationUser username="admin" password="sunflower"
 					groups="admin"/>
+                <authenticationUser username="browser" password="sunflower"
+                                    groups="browsers"/>
+                <authenticationUser username="reader" password="sunflower"
+                                    groups="readers"/>
 			</users>
 		</simpleAuthenticationPlugin>
 

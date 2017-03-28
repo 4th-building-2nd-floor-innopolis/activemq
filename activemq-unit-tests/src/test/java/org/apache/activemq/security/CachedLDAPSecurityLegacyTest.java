@@ -16,7 +16,7 @@
  */
 package org.apache.activemq.security;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.*;
 import org.apache.activemq.broker.BrokerFactory;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.directory.server.annotations.CreateLdapServer;
@@ -31,7 +31,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.jms.*;
+import javax.jms.Message;
+import javax.jms.Queue;
 
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -109,6 +115,56 @@ public class CachedLDAPSecurityLegacyTest extends AbstractLdapTestUnit {
     }
 
     @Test
+    public void testReceiveDeniedForBrowsers() throws Exception {
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
+        Connection browserConnection = factory.createQueueConnection("browser", "sunflower");
+        Session browserSession = browserConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        browserConnection.start();
+
+        Queue testQueue = browserSession.createQueue("TEST.FOO");
+
+        try {
+            browserSession.createConsumer(testQueue);
+            fail("expect auth exception");
+        } catch (JMSException expected) {
+        }
+    }
+
+    @Test
+    public void testBrowser() throws Exception {
+        String testQueueName = "TEST.FOO";
+        sendTestMessage(testQueueName);
+
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
+        Connection browserConnection = factory.createQueueConnection("browser", "sunflower");
+        Session browserSession = browserConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        browserConnection.start();
+
+        Queue testQueue = browserSession.createQueue(testQueueName);
+
+        QueueBrowser browser = browserSession.createBrowser(testQueue);
+
+        List<Message> messageList = Collections.list(browser.getEnumeration());
+        assertEquals(messageList.size(), 1);
+    }
+
+    @Test
+    public void testBrowseForReaders() throws Exception {
+        String testQueueName = "TEST.FOO";
+        sendTestMessage(testQueueName);
+
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
+        Connection browserConnection = factory.createQueueConnection("reader", "sunflower");
+        Session browserSession = browserConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        browserConnection.start();
+
+        Queue testQueue = browserSession.createQueue(testQueueName);
+        QueueBrowser browser = browserSession.createBrowser(testQueue);
+        List<Message> messageList = Collections.list(browser.getEnumeration());
+        assertEquals(messageList.size(), 1);
+    }
+
+    @Test
     public void testTempDestinations() throws Exception {
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
         Connection conn = factory.createQueueConnection("jdoe", "sunflower");
@@ -124,6 +180,19 @@ public class CachedLDAPSecurityLegacyTest extends AbstractLdapTestUnit {
         assertNotNull(msg);
     }
 
+    protected void sendTestMessage(String queueName) throws Exception {
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://localhost");
+
+        Connection producerConnection = factory.createQueueConnection("jdoe", "sunflower");
+        Session producerSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        producerConnection.start();
+        Queue producerTestQueue = producerSession.createQueue(queueName);
+        MessageProducer producer = producerSession.createProducer(producerTestQueue);
+        producer.send(producerSession.createTextMessage("test"));
+        producer.close();
+        producerSession.close();
+        producerConnection.close();
+    }
 }
 
 

@@ -61,6 +61,17 @@ member: uid=jdoe
 objectClass: groupOfNames
 objectClass: top
 
+dn: cn=browsers,ou=Group,ou=ActiveMQ,ou=system
+cn: browsers
+member: uid=browser
+objectClass: groupOfNames
+objectClass: top
+
+dn: cn=readers,ou=Group,ou=ActiveMQ,ou=system
+cn: readers
+member: uid=reader
+objectClass: groupOfNames
+objectClass: top
 
 ##################
 ## Define users ##
@@ -79,6 +90,19 @@ objectClass: account
 objectClass: simpleSecurityObject
 objectClass: top
 
+dn: uid=browser,ou=User,ou=ActiveMQ,ou=system
+uid: browser
+userPassword: {SSHA}YvMAkkd66cDecNoejo8jnw5uUUBziyl0
+objectClass: account
+objectClass: simpleSecurityObject
+objectClass: top
+
+dn: uid=reader,ou=User,ou=ActiveMQ,ou=system
+uid: reader
+userPassword: {SSHA}YvMAkkd66cDecNoejo8jnw5uUUBziyl0
+objectClass: account
+objectClass: simpleSecurityObject
+objectClass: top
 
 dn: uid=jdoe,ou=User,ou=ActiveMQ,ou=system
 uid: jdoe
@@ -89,7 +113,6 @@ objectclass: person
 objectclass: top
 cn: Jane Doe
 sn: Doe
-
 
 #########################
 ## Define destinations ##
@@ -130,6 +153,7 @@ dn: cn=read,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
 cn: read
 member: cn=users
 member: cn=admins
+member: cn=readers
 objectClass: groupOfNames
 objectClass: top
 
@@ -140,6 +164,13 @@ objectClass: top
 member: cn=users
 member: cn=admins
 
+dn: cn=browser,cn=TEST.FOO,ou=Queue,ou=Destination,ou=ActiveMQ,ou=system
+cn: browser
+member: cn=users
+member: cn=admins
+member: cn=browsers
+objectClass: groupOfNames
+objectClass: top
 
 ## FOO.>
 
@@ -216,6 +247,8 @@ dn: cn=read,cn=ActiveMQ.Advisory.$,ou=Topic,ou=Destination,ou=ActiveMQ,ou=system
 cn: read
 member: cn=admins
 member: cn=users
+member: cn=browsers
+member: cn=readers
 objectClass: groupOfNames
 objectClass: top
 
@@ -223,6 +256,8 @@ dn: cn=write,cn=ActiveMQ.Advisory.$,ou=Topic,ou=Destination,ou=ActiveMQ,ou=syste
 cn: write
 member: cn=admins
 member: cn=users
+member: cn=browsers
+member: cn=readers
 objectClass: groupOfNames
 objectClass: top
 
@@ -230,6 +265,8 @@ dn: cn=admin,cn=ActiveMQ.Advisory.$,ou=Topic,ou=Destination,ou=ActiveMQ,ou=syste
 cn: admin
 member: cn=admins
 member: cn=users
+member: cn=browsers
+member: cn=readers
 objectClass: groupOfNames
 objectClass: top
 
